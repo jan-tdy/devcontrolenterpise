@@ -26,11 +26,12 @@ class MainWindow(QMainWindow):
         self.grid_layout = QGridLayout()
         self.main_layout.setLayout(self.grid_layout)
 
+        self.status_labels = {} # Inicializácia self.status_labels
         self.init_atacama_section()
         self.init_astrofoto_section()
         self.init_wake_on_lan_section()
         self.init_ota_section()
-        self.status_labels = {}
+
 
     def init_atacama_section(self):
         """Inicializuje sekciu ATACAMA."""
