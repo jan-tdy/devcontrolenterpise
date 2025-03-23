@@ -1,0 +1,8 @@
+Devcontrol EnterprisePopisDevcontrol Enterprise je aplikácia pre riadenie a monitorovanie astronomického observatória. Umožňuje ovládať rôzne zariadenia, ako sú zásuvky, strecha a ďalšie, a poskytuje funkcionalitu pre aktualizáciu softvéru a zobrazenie obrazu z kamery.InštaláciaKlonovanie repozitára:git clone https://github.com/jan-tdy/devcontrolenterpise.git
+Inštalácia závislostí:Pre spustenie aplikácie je potrebné mať nainštalovaný Python 3 a nasledujúce balíčky. Nainštalujte ich pomocou pip:pip3 install PyQt5
+pip3 install wakeonlan  # Pre funkciu Wake-on-LAN (ak sa používa)
+ZávislostiPython 3: Programovací jazyk, na ktorom je aplikácia napísaná.PyQt5: Knižnica pre tvorbu grafického používateľského rozhrania.wakeonlan: Knižnica pre odosielanie Wake-on-LAN paketov (voliteľné, ak sa používa funkcia Wake-on-LAN).Font Awesome: Knižnica ikon pre zobrazenie stavových indikátorov.SpusteniePrejdite do adresára s kódom aplikácie.Spustite aplikáciu pre C14:cd C14
+python3 C14.py
+Spustite aplikáciu pre Central2:cd Central2
+python3 central2.py
+KonfiguráciaPred spustením aplikácie je potrebné skontrolovať a prípadne upraviť konštanty v kóde (C14.py a central2.py):SSH_USER, SSH_PASS: Používateľské meno a heslo pre pripojenie cez SSH. Odporúča sa používať SSH kľúče namiesto hesla.C14_IP: IP adresa riadiaceho počítača C14.Ostatné IP adresy a MAC adresy zariadení.Cesty k súborom a ďalšie nastavenia.Aktualizácia programuProgram sa aktualizuje stiahnutím najnovšej verzie z GitHub repozitára a nahradením existujúcich súborov. V aplikácii je na to tlačidlo "Aktualizovať program".LicenciaAplikácia je licencovaná pod MIT licenciou. Viac informácií nájdete v súbore LICENSE.
