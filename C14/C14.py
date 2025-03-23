@@ -33,6 +33,7 @@ class MainWindow(QMainWindow):
         self.grid_layout = QGridLayout()
         self.main_layout.setLayout(self.grid_layout)
 
+        self.status_labels = {} # Inicializácia self.status_labels
         # Inicializácia sekcií
         self.init_atacama_section()
         self.init_wake_on_lan_section()
