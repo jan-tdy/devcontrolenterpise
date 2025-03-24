@@ -2,7 +2,7 @@
 Version=1.0
 Type=Application
 Name=JaPySoft DevControlEnterprise
-Exec=python3 /home/dpv/devcontrolentrpise/central2.py
+Exec=firefox file:///home/dpv/devcontrolentrpise/index.html
 Terminal=false
 Categories=Science;Application;
 StartupNotify=true
