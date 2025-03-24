@@ -1,9 +1,9 @@
 import sys
 import subprocess
-import PyQt5.QtWidgets as QtWidgets
-import PyQt5.QtGui as QtGui
-import PyQt5.QtCore as QtCore
-import time # Import time pre oneskorenie
+import time  # Import time pre oneskorenie
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
 
 # Konštanty
 PROGRAM_GITHUB = "github.com/jan-tdy/devcontrolenterpise-ordervtdy01dpv-main/main.py"
@@ -11,185 +11,125 @@ PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/main.py"
 SSH_USER = "dpv"
 SSH_PASS = "otj0711"  # POZOR: Heslo by nemalo byť v kóde
 C14_IP = "172.20.20.103"
-AZ2000_IP = "172.20.20.101" # IP adresa pre AZ2000
+AZ2000_IP = "172.20.20.101"  # IP adresa pre AZ2000
 
-class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Ovládanie Hvezdárne - Central2")
-        self.setGeometry(100, 100, 800, 600)
 
-        self.main_layout = QtWidgets.QWidget()
-        self.setCentralWidget(self.main_layout)
-        self.grid_layout = QtWidgets.QGridLayout()
-        self.main_layout.setLayout(self.grid_layout)
+@app.route('/ovladaj_zasuvku_c14', methods=['POST'])
+def ovladaj_zasuvku_c14():
+    """Ovláda zásuvku na C14 cez SSH. Očakáva JSON payload s kľúčmi 'cislo_zasuvky' a 'zapnut'."""
+    data = request.get_json()
+    cislo_zasuvky = data.get('cislo_zasuvky')
+    zapnut = data.get('zapnut')
+    label_name = data.get('label_name') #pouzivame pre response
 
-        self.status_labels = {}  # Inicializácia self.status_labels
+    if cislo_zasuvky is None or zapnut is None:
+        return jsonify({'status': 'error', 'message': 'Chýbajúce parametre'}), 400
 
-        self.init_c14_control_section()
-        self.init_wake_on_lan_section()
-        self.init_ota_section()
+    prikaz = f"ssh {SSH_USER}@{C14_IP} sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"
+    try:
+        vystup = subprocess.check_output(prikaz, shell=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
+        print(vystup.decode())
+        return jsonify({'status': 'success', 'message': f'Zásuvka {cislo_zasuvky} {"zapnutá" if zapnut else "vypnutá"}.', 'label_name': label_name}), 200
+    except subprocess.CalledProcessError as e:
+        print(f"Chyba pri ovládaní zásuvky na C14: {e}")
+        return jsonify({'status': 'error', 'message': f'Chyba pri ovládaní zásuvky: {e}'}), 500
 
-    def init_c14_control_section(self):
-        """Inicializuje sekciu pre ovládanie C14."""
-        group_box = QtWidgets.QGroupBox("Ovládanie C14")
-        layout = QtWidgets.QGridLayout()
 
-        # Zásuvky na C14
-        c14_zasuvky_layout = QtWidgets.QGridLayout()
-        c14_zasuvky_group = QtWidgets.QGroupBox("Zásuvky C14")
-        zasuvky = {"NOUT": 4, "C14": 3, "RC16": 2}
-        for i, (name, cislo) in enumerate(zasuvky.items()):
-            label = QtWidgets.QLabel(name)
-            zapnut_button = QtWidgets.QPushButton("Zapnúť")
-            vypnut_button = QtWidgets.QPushButton("Vypnúť")
-            self.status_labels[name] = QtWidgets.QLabel()
-            self.status_labels[name].setPixmap(QtGui.QPixmap("led_red.png"))
-            zapnut_button.clicked.connect(lambda _, n=cislo, l_name=name: self.ovladaj_zasuvku_c14(n, True, l_name))
-            vypnut_button.clicked.connect(lambda _, n=cislo, l_name=name: self.ovladaj_zasuvku_c14(n, False, l_name))
-            c14_zasuvky_layout.addWidget(label, i, 0)
-            c14_zasuvky_layout.addWidget(zapnut_button, i, 1)
-            c14_zasuvky_layout.addWidget(vypnut_button, i, 2)
-            c14_zasuvky_layout.addWidget(self.status_labels[name], i, 3)
-        c14_zasuvky_group.setLayout(c14_zasuvky_layout)
-        layout.addWidget(c14_zasuvky_group, 0, 0, 1, 3)
+@app.route('/spusti_indistarter_c14', methods=['POST'])
+def spusti_indistarter_c14():
+    """Spustí INDISTARTER na C14 a UVEX-RPi cez SSH."""
+    try:
+        # Spustenie na C14
+        c14_prikaz = f"ssh {SSH_USER}@{C14_IP} indistarter"
+        c14_vystup = subprocess.check_output(c14_prikaz, shell=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
+        print(f"INDISTARTER na C14: {c14_vystup.decode()}")
 
-        # INDISTARTER na C14 a UVEX-RPi
-        indistarter_button = QtWidgets.QPushButton("Spustiť INDISTARTER na C14/UVEX")
-        indistarter_button.clicked.connect(self.spusti_indistarter_c14)
-        layout.addWidget(indistarter_button, 1, 0, 1, 3)
+        # Spustenie na UVEX-RPi (cez SSH z C14)
+        uvex_prikaz = f"ssh {SSH_USER}@{C14_IP} ssh {SSH_USER}@{AZ2000_IP} indistarter"
+        uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
+        print(f"INDISTARTER na UVEX-RPi: {uvex_vystup.decode()}")
+        return jsonify({'status': 'success', 'message': 'INDISTARTER spustený na C14 a UVEX-RPi'}), 200
+    except subprocess.CalledProcessError as e:
+        print(f"Chyba pri spúšťaní INDISTARTERA na C14/UVEX: {e}")
+        return jsonify({'status': 'error', 'message': f'Chyba pri spúšťaní INDISTARTERA: {e}'}), 500
 
-        # Strecha na C14
-        strecha_layout = QtWidgets.QGridLayout()
-        strecha_group = QtWidgets.QGroupBox("Strecha C14")
-        sever_button = QtWidgets.QPushButton("Sever")
-        juh_button = QtWidgets.QPushButton("Juh")
-        sever_button.clicked.connect(lambda: self.ovladaj_strechu_c14("sever"))
-        juh_button.clicked.connect(lambda: self.ovladaj_strechu_c14("juh"))
-        strecha_layout.addWidget(sever_button, 0, 0)
-        strecha_layout.addWidget(juh_button, 0, 1)
-        strecha_group.setLayout(strecha_layout)
-        layout.addWidget(strecha_group, 2, 0, 1, 3)
 
-        group_box.setLayout(layout)
-        self.grid_layout.addWidget(group_box, 0, 0)
+@app.route('/ovladaj_strechu_c14', methods=['POST'])
+def ovladaj_strechu_c14():
+    """Ovláda strechu na C14 cez SSH. Očakáva JSON payload s kľúčom 'strana'."""
+    data = request.get_json()
+    strana = data.get('strana')
 
-    def init_wake_on_lan_section(self):
-        """Inicializuje sekciu WAKE-ON-LAN."""
-        group_box = QtWidgets.QGroupBox("WAKE-ON-LAN")
-        layout = QtWidgets.QGridLayout()
-        az2000_button = QtWidgets.QPushButton("Zapni AZ2000")
-        gm3000_button = QtWidgets.QPushButton("Zapni GM3000")
-        az2000_button.clicked.connect(lambda: self.wake_on_lan("00:c0:08:a9:c2:32"))
-        gm3000_button.clicked.connect(lambda: self.wake_on_lan("00:c0:08:aa:35:12"))
-        layout.addWidget(az2000_button, 0, 0)
-        layout.addWidget(gm3000_button, 0, 1)
-        group_box.setLayout(layout)
-        self.grid_layout.addWidget(group_box, 0, 1)
+    if strana is None:
+        return jsonify({'status': 'error', 'message': 'Chýbajúci parameter "strana"'}), 400
 
-    def init_ota_section(self):
-        """Inicializuje sekciu OTA Aktualizácie."""
-        group_box = QtWidgets.QGroupBox("OTA Aktualizácie")
-        layout = QtWidgets.QGridLayout()
-        aktualizovat_button = QtWidgets.QPushButton("Aktualizovať program")
-        aktualizovat_button.clicked.connect(self.aktualizuj_program)
-        layout.addWidget(aktualizovat_button, 0, 0)
-        group_box.setLayout(layout)
-        self.grid_layout.addWidget(group_box, 1, 0)
+    if strana == "sever":
+        prikaz1 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 2 ON"
+        prikaz2 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 2 OFF"
+    elif strana == "juh":
+        prikaz1 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 1 ON"
+        prikaz2 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 1 OFF"
+    else:
+        return jsonify({'status': 'error', 'message': 'Neplatná strana strechy. Použite "sever" alebo "juh".'}), 400
 
-        # Pridanie linkov na kamery
-        kamera_atacama_label = QtWidgets.QLabel("<a href='http://172.20.20.134'>Kamera Atacama</a>")
-        kamera_atacama_label.setOpenExternalLinks(True)
-        kamera_astrofoto_label = QtWidgets.QLabel("<a href='http://172.20.20.131'>Kamera Astrofoto</a>")
-        kamera_astrofoto_label.setOpenExternalLinks(True)
-        self.grid_layout.addWidget(kamera_atacama_label, 1, 1)
-        self.grid_layout.addWidget(kamera_astrofoto_label, 2, 1)
+    try:
+        subprocess.run(prikaz1, shell=True, check=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
+        time.sleep(2)
+        subprocess.run(prikaz2, shell=True, check=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
+        print(f"Strecha ({strana}) na C14 ovládaná.")
+        return jsonify({'status': 'success', 'message': f'Strecha na C14 ovládaná na stranu {strana}'}), 200
+    except subprocess.CalledProcessError as e:
+        print(f"Chyba pri ovládaní strechy ({strana}) na C14: {e}")
+        return jsonify({'status': 'error', 'message': f'Chyba pri ovládaní strechy: {e}'}), 500
 
-    def ovladaj_zasuvku_c14(self, cislo_zasuvky, zapnut, label_name):
-        """Ovláda zásuvku na C14 cez SSH."""
-        prikaz = f"ssh {SSH_USER}@{C14_IP} sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"
-        try:
-            vystup = subprocess.check_output(prikaz, shell=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
-            print(vystup.decode())
-            if zapnut:
-                self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_green.png"))
-            else:
-                self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_red.png"))
-        except subprocess.CalledProcessError as e:
-            print(f"Chyba pri ovládaní zásuvky na C14: {e}")
-            self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_red.png"))
 
-    def spusti_indistarter_c14(self):
-        """Spustí INDISTARTER na C14 a UVEX-RPi cez SSH."""
-        try:
-            # Spustenie na C14
-            c14_prikaz = f"ssh {SSH_USER}@{C14_IP} indistarter"
-            c14_vystup = subprocess.check_output(c14_prikaz, shell=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
-            print(f"INDISTARTER na C14: {c14_vystup.decode()}")
 
-            # Spustenie na UVEX-RPi (cez SSH z C14)
-            uvex_prikaz = f"ssh {SSH_USER}@{C14_IP} ssh {SSH_USER}@{AZ2000_IP} indistarter"
-            uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
-            print(f"INDISTARTER na UVEX-RPi: {uvex_vystup.decode()}")
-        except subprocess.CalledProcessError as e:
-            print(f"Chyba pri spúšťaní INDISTARTERA na C14/UVEX: {e}")
+@app.route('/wake_on_lan', methods=['POST'])
+def wake_on_lan():
+    """Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN. Očakáva JSON s kľúčom 'mac_adresa'."""
+    data = request.get_json()
+    mac_adresa = data.get('mac_adresa')
 
-    def ovladaj_strechu_c14(self, strana):
-        """Ovláda strechu na C14 cez SSH."""
-        if strana == "sever":
-            prikaz1 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 2 ON"
-            prikaz2 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 2 OFF"
-        elif strana == "juh":
-            prikaz1 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 1 ON"
-            prikaz2 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 1 OFF"
-        else:
-            print("Neplatná strana strechy.")
-            return
+    if mac_adresa is None:
+        return jsonify({'status': 'error', 'message': 'Chýbajúci parameter "mac_adresa"'}), 400
 
-        try:
-            subprocess.run(prikaz1, shell=True, check=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
-            time.sleep(2)
-            subprocess.run(prikaz2, shell=True, check=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
-            print(f"Strecha ({strana}) na C14 ovládaná.")
-        except subprocess.CalledProcessError as e:
-            print(f"Chyba pri ovládaní strechy ({strana}) na C14: {e}")
+    # Implementácia Wake-on-LAN
+    print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
+    try:
+        # from wakeonlan import send_magic_packet # Zakomentované, lebo wakeonlan nie je štandardná knižnica
+        # send_magic_packet(mac_adresa)
+        pass  # odstrániť pass a odkomentovať riadky vyššie
+        return jsonify({'status': 'success', 'message': f'Magic packet odoslaný na {mac_adresa}'}), 200
+    except Exception as e:
+        print(f"Chyba pri odosielaní magic packetu: {e}")
+        return jsonify({'status': 'error', 'message': f'Chyba pri odosielaní magic packetu: {e}'}), 500
 
-    def wake_on_lan(self, mac_adresa):
-        """Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN."""
-        # Implementácia Wake-on-LAN
-        print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
-        try:
-            # from wakeonlan import send_magic_packet # Zakomentované, lebo wakeonlan nie je štandardná knižnica
-            # send_magic_packet(mac_adresa)
-            pass  # odstrániť pass a odkomentovať riadky vyššie
-        except Exception as e:
-            print(f"Chyba pri odosielaní magic packetu: {e}")
 
-    def aktualizuj_program(self):
-        """Aktualizuje program z GitHub repozitára."""
-        try:
-            # 1. Stiahnutie aktualizovaného súboru
-            print("Aktualizujem program...")
-            prikaz_stiahnutie = f"curl -O https://{PROGRAM_GITHUB}"
-            subprocess.run(prikaz_stiahnutie, shell=True, check=True)
+@app.route('/aktualizuj_program', methods=['POST'])
+def aktualizuj_program():
+    """Aktualizuje program z GitHub repozitára."""
+    try:
+        # 1. Stiahnutie aktualizovaného súboru
+        print("Aktualizujem program...")
+        prikaz_stiahnutie = f"curl -O https://{PROGRAM_GITHUB}"
+        subprocess.run(prikaz_stiahnutie, shell=True, check=True)
 
-            # 2. Nahradenie existujúceho súboru
-            prikaz_nahradenie = f"cp main.py {PROGRAM_CESTA}"
-            subprocess.run(prikaz_nahradenie, shell=True, check=True)
+        # 2. Nahradenie existujúceho súboru
+        prikaz_nahradenie = f"cp main.py {PROGRAM_CESTA}"
+        subprocess.run(prikaz_nahradenie, shell=True, check=True)
 
-            # 3. Reštart aplikácie
-            print("Program bol aktualizovaný. Reštartujem aplikáciu...")
-            # sem pride kod na restart
-            # sys.executable
-            pass  # odstrániť pass a odkomentovať riadok vyššie
-        except subprocess.CalledProcessError as e:
-            print(f"Chyba pri aktualizácii programu: {e}")
-        except Exception as e:
-            print(f"Neočakávaná chyba: {e}")
+        # 3. Reštart aplikácie (toto je potrebné urobiť správne pre serverové prostredie, napr. cez supervisor)
+        print("Program bol aktualizovaný. Reštartujem aplikáciu...")
+        # sys.executable
+        # V reálnom nasadení by sa mal použiť správny nástroj na reštartovanie služby, napr. supervisorctl restart moja_aplikacia
+        return jsonify({'status': 'success', 'message': 'Program aktualizovaný, reštartujte aplikáciu'}), 200
+    except subprocess.CalledProcessError as e:
+        print(f"Chyba pri aktualizácii programu: {e}")
+        return jsonify({'status': 'error', 'message': f'Chyba pri aktualizácii programu: {e}'}), 500
+    except Exception as e:
+        print(f"Neočakávaná chyba: {e}")
+        return jsonify({'status': 'error', 'message': f'Neočakávaná chyba: {e}'}), 500
+
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    hlavne_okno = MainWindow()
-    hlavne_okno.show()
-    sys.exit(app.exec_())
-
+    app.run(host='0.0.0.0', port=5000, debug=True) #povolene debug mode
