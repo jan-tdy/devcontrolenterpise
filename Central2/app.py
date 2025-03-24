@@ -3,13 +3,15 @@ import subprocess
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
+import time # Import time pre oneskorenie
 
 # Konštanty
 PROGRAM_GITHUB = "github.com/jan-tdy/devcontrolenterpise-ordervtdy01dpv-main/main.py"
 PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/main.py"
 SSH_USER = "dpv"
-SSH_PASS = "otj0711" #POZOR: Heslo by nemalo byt v kode
+SSH_PASS = "otj0711"  # POZOR: Heslo by nemalo byť v kóde
 C14_IP = "172.20.20.103"
+AZ2000_IP = "172.20.20.101" # IP adresa pre AZ2000
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -27,8 +29,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_c14_control_section()
         self.init_wake_on_lan_section()
         self.init_ota_section()
-        
-        
 
     def init_c14_control_section(self):
         """Inicializuje sekciu pre ovládanie C14."""
@@ -86,7 +86,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(gm3000_button, 0, 1)
         group_box.setLayout(layout)
         self.grid_layout.addWidget(group_box, 0, 1)
-    
+
     def init_ota_section(self):
         """Inicializuje sekciu OTA Aktualizácie."""
         group_box = QtWidgets.QGroupBox("OTA Aktualizácie")
@@ -96,7 +96,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(aktualizovat_button, 0, 0)
         group_box.setLayout(layout)
         self.grid_layout.addWidget(group_box, 1, 0)
-        
+
         # Pridanie linkov na kamery
         kamera_atacama_label = QtWidgets.QLabel("<a href='http://172.20.20.134'>Kamera Atacama</a>")
         kamera_atacama_label.setOpenExternalLinks(True)
@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """Ovláda zásuvku na C14 cez SSH."""
         prikaz = f"ssh {SSH_USER}@{C14_IP} sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"
         try:
-            vystup = subprocess.check_output(prikaz, shell=True, password=SSH_PASS) #POZOR: Heslo by nemalo byt v kode
+            vystup = subprocess.check_output(prikaz, shell=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
             print(vystup.decode())
             if zapnut:
                 self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_green.png"))
@@ -124,12 +124,12 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             # Spustenie na C14
             c14_prikaz = f"ssh {SSH_USER}@{C14_IP} indistarter"
-            c14_vystup = subprocess.check_output(c14_prikaz, shell=True, password=SSH_PASS) #POZOR: Heslo by nemalo byt v kode
+            c14_vystup = subprocess.check_output(c14_prikaz, shell=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
             print(f"INDISTARTER na C14: {c14_vystup.decode()}")
 
             # Spustenie na UVEX-RPi (cez SSH z C14)
             uvex_prikaz = f"ssh {SSH_USER}@{C14_IP} ssh {SSH_USER}@{AZ2000_IP} indistarter"
-            uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, password=SSH_PASS) #POZOR: Heslo by nemalo byt v kode
+            uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
             print(f"INDISTARTER na UVEX-RPi: {uvex_vystup.decode()}")
         except subprocess.CalledProcessError as e:
             print(f"Chyba pri spúšťaní INDISTARTERA na C14/UVEX: {e}")
@@ -147,9 +147,9 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         try:
-            subprocess.run(prikaz1, shell=True, check=True, password=SSH_PASS) #POZOR: Heslo by nemalo byt v kode
+            subprocess.run(prikaz1, shell=True, check=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
             time.sleep(2)
-            subprocess.run(prikaz2, shell=True, check=True, password=SSH_PASS) #POZOR: Heslo by nemalo byt v kode
+            subprocess.run(prikaz2, shell=True, check=True, password=SSH_PASS)  # POZOR: Heslo by nemalo byť v kóde
             print(f"Strecha ({strana}) na C14 ovládaná.")
         except subprocess.CalledProcessError as e:
             print(f"Chyba pri ovládaní strechy ({strana}) na C14: {e}")
@@ -159,12 +159,12 @@ class MainWindow(QtWidgets.QMainWindow):
         # Implementácia Wake-on-LAN
         print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
         try:
-            #from wakeonlan import send_magic_packet
-            #send_magic_packet(mac_adresa)
-            pass #odstranit pass a odkomentovat riadky vyssie
+            # from wakeonlan import send_magic_packet # Zakomentované, lebo wakeonlan nie je štandardná knižnica
+            # send_magic_packet(mac_adresa)
+            pass  # odstrániť pass a odkomentovať riadky vyššie
         except Exception as e:
             print(f"Chyba pri odosielaní magic packetu: {e}")
-    
+
     def aktualizuj_program(self):
         """Aktualizuje program z GitHub repozitára."""
         try:
@@ -180,8 +180,8 @@ class MainWindow(QtWidgets.QMainWindow):
             # 3. Reštart aplikácie
             print("Program bol aktualizovaný. Reštartujem aplikáciu...")
             # sem pride kod na restart
-            #sys.executable
-            pass #odstranit pass a odkomentovat riadok vyssie
+            # sys.executable
+            pass  # odstrániť pass a odkomentovať riadok vyššie
         except subprocess.CalledProcessError as e:
             print(f"Chyba pri aktualizácii programu: {e}")
         except Exception as e:
@@ -192,3 +192,4 @@ if __name__ == "__main__":
     hlavne_okno = MainWindow()
     hlavne_okno.show()
     sys.exit(app.exec_())
+
