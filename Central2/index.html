@@ -131,14 +131,6 @@
     // Základná URL pre server
     const SERVER_URL = "http://172.20.20.133:5000";
 
-    // Stav zásuviek
-    const zasuvkyState = {
-      'NOUT': false,
-      'C14': false,
-      'RC16': false
-    };
-
-    // Funkcia pre zobrazenie toast notifikácie
     function showToast(message, type = 'success') {
       const toast = document.createElement('div');
       toast.className = `fixed bottom-4 right-4 bg-${type === 'success' ? 'green' : 'red'}-500 text-white py-2 px-4 rounded shadow-lg`;
@@ -147,16 +139,12 @@
       setTimeout(() => toast.remove(), 3000);
     }
 
-    // Funkcia pre odoslanie požiadavky na server
+    // Odošleme požiadavku metódou GET s parametrami v query stringu
     async function sendRequest(endpoint, data = {}) {
+      const queryString = new URLSearchParams(data).toString();
+      const url = SERVER_URL + endpoint + "?" + queryString;
       try {
-        const response = await fetch(SERVER_URL + endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
-        });
+        const response = await fetch(url, { method: 'GET' });
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -169,7 +157,6 @@
       }
     }
 
-    // Aktualizácia LED stavu
     function updateLed(labelName, color) {
       const ledElement = document.getElementById(labelName + "-led");
       if (ledElement) {
@@ -177,7 +164,6 @@
       }
     }
 
-    // Aktualizácia stavu tlačidla
     function updateButtonState(buttonId, isEnabled) {
       const button = document.getElementById(buttonId);
       if (button) {
@@ -188,10 +174,9 @@
       }
     }
 
-    // Funkcia pre toggle zásuvky C14
     async function toggleZasuvkaC14(cislo_zasuvky, labelName) {
       const buttonId = `${labelName}-button`;
-      const currentState = zasuvkyState[labelName];
+      const currentState = window.zasuvkyState ? window.zasuvkyState[labelName] : false;
       const zapnut = !currentState;
       updateButtonState(buttonId, false);
       const data = { cislo_zasuvky, zapnut, label_name: labelName };
@@ -199,7 +184,8 @@
         const responseData = await sendRequest('/ovladaj_zasuvku_c14', data);
         showToast(responseData.message);
         updateLed(labelName, zapnut ? 'green' : 'red');
-        zasuvkyState[labelName] = zapnut;
+        window.zasuvkyState = window.zasuvkyState || {};
+        window.zasuvkyState[labelName] = zapnut;
         updateButtonState(buttonId, true);
         if (zapnut) {
           document.getElementById(buttonId).textContent = "Vypnúť";
@@ -214,7 +200,6 @@
       }
     }
 
-    // Funkcia pre spustenie INDISTARTER na C14/UVEX
     async function spustiIndistarterC14() {
       try {
         const responseData = await sendRequest('/spusti_indistarter_c14');
@@ -224,7 +209,6 @@
       }
     }
 
-    // Funkcia pre ovládanie strechy C14
     async function ovladajStrechuC14(strana) {
       const data = { strana };
       try {
@@ -235,7 +219,6 @@
       }
     }
 
-    // Funkcia pre odoslanie Wake-on-LAN príkazu
     async function wakeOnLan(mac_adresa) {
       const data = { mac_adresa };
       try {
@@ -246,7 +229,6 @@
       }
     }
 
-    // Funkcia pre aktualizáciu programu
     async function aktualizujProgram() {
       try {
         const responseData = await sendRequest('/aktualizuj_program');
@@ -256,12 +238,10 @@
       }
     }
 
-    // Funkcia pre otvorenie kamery s onvif autentifikáciou
     function openCamera(ip) {
-      // Vlož svoje prihlasovacie údaje pre TP-Link Vigi kamery
       const username = "USERNAME"; // Nahraď svojim používateľským menom
       const password = "PASSWORD"; // Nahraď svojim heslom
-      const url = `http://${username}:${password}@${ip}:2020/stream_simple.jpeg`;
+      const url = `http://${username}:${password}@${ip}/stream_simple.jpeg`;
       window.open(url, '_blank');
     }
 
