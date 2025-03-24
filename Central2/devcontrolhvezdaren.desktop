@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=JaPySoft DevControlEnterprise
+Exec=python3 /home/dpv/devcontrolentrpise/central2.py
+Terminal=false
+Categories=Science;Application;
+StartupNotify=true
