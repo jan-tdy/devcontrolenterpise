@@ -16,8 +16,8 @@ ZASUVKY = {
     "C14": 3,
     "RC16": 2
 }
-PROGRAM_GITHUB = "github.com/jan-tdy/devcontrolenterpise-ordervtdy01dpv-atacama/main.py"
-PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/main.py"
+PROGRAM_GITHUB = "github.com/jan-tdy/devcontrolenterpise/blob/main/C14/C14.py"
+PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
 SSH_USER = "dpv"  # Používateľ pre SSH
 SSH_PASS = "otj0711"  # Heslo pre SSH (Pozor: Pre produkčné prostredie použiť SSH kľúče!)
 CENTRAL2_IP = "172.20.20.133"  # IP adresa Central2
@@ -210,7 +210,7 @@ class MainWindow(QMainWindow):
             subprocess.run(prikaz_stiahnutie, shell=True, check=True)
 
             # 2. Nahradenie existujúceho súboru
-            prikaz_nahradenie = f"cp main.py {PROGRAM_CESTA}"  # Predpoklad, že stiahnutý súbor je v aktuálnom adresári
+            prikaz_nahradenie = f"cp C14.py {PROGRAM_CESTA}"  # Predpoklad, že stiahnutý súbor je v aktuálnom adresári
             subprocess.run(prikaz_nahradenie, shell=True, check=True)
 
             # 3. Reštart aplikácie (ak je to potrebné)
