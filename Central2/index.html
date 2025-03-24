@@ -5,140 +5,272 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ovládanie Hvezdárne - Central2</title>
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
+        .led-green {
+            background-color: green;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .led-red {
+            background-color: red;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .on-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .on-button:hover {
+            background-color: #45a049;
+        }
+        .off-button {
+            background-color: #f44336;
+            color: white;
+        }
+        .off-button:hover {
+            background-color: #da190b;
+        }
+        .disabled-button {
+            background-color: #cccccc;
+            color: #666666;
+            cursor: not-allowed;
+        }
+        .disabled-button:hover {
+            background-color: #cccccc;
+        }
+        .camera-feed {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
     </style>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'inter': ['Inter', 'sans-serif'],
-                    },
-                },
-            },
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 bg-${type === 'success' ? 'green' : 'red'}-500 text-white py-2 px-4 rounded shadow-lg`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
         }
-    </script>
-</head>
-<body class="bg-gray-100 p-6">
-    <h1 class="text-2xl font-semibold text-center text-gray-800 mb-8">Ovládanie Hvezdárne - Central2</h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">ATACAMA</h2>
-            <div class="space-y-4">
-                <div>
-                    <h3 class="font-medium text-gray-600">Zásuvky</h3>
-                    <div class="grid grid-cols-3 gap-2 mt-2">
-                        <label class="text-gray-700">NOUT</label>
-                        <button id="nout-on" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Zapnúť</button>
-                        <button id="nout-off" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Vypnúť</button>
-                        <span id="nout-status" class="text-gray-700"><i class="fas fa-circle text-red-500"></i></span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2 mt-2">
-                        <label class="text-gray-700">C14</label>
-                        <button id="c14-on" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Zapnúť</button>
-                        <button id="c14-off" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Vypnúť</button>
-                        <span id="c14-status" class="text-gray-700"><i class="fas fa-circle text-red-500"></i></span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2 mt-2">
-                        <label class="text-gray-700">RC16</label>
-                        <button id="rc16-on" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Zapnúť</button>
-                        <button id="rc16-off" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Vypnúť</button>
-                        <span id="rc16-status" class="text-gray-700"><i class="fas fa-circle text-red-500"></i></span>
-                    </div>
-                </div>
-                <div>
-                    <button id="indistarter" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Spustiť INDISTARTER</button>
-                    <span id="indistarter-status" class="text-gray-700 ml-2"><i class="fas fa-circle text-red-500"></i></span>
-                </div>
-                <div>
-                    <h3 class="font-medium text-gray-600">Strecha</h3>
-                    <div class="grid grid-cols-3 gap-2 mt-2">
-                        <button id="strecha-sever" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">Sever</button>
-                        <button id="strecha-juh" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">Juh</button>
-                        <span id="strecha-status" class="text-gray-700"><i class="fas fa-circle text-red-500"></i></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">WAKE-ON-LAN</h2>
-            <div class="space-y-4">
-                <button id="az2000-wol" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Zapni AZ2000</button>
-                <button id="gm3000-wol" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Zapni GM3000</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-white shadow-md rounded-lg p-6 mt-6">
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">OTA Aktualizácie</h2>
-        <button id="aktualizovat" class="bg-yellow-500 hover:bg-yellow-700 text-gray-800 font-bold py-2 px-4 rounded">Aktualizovať program</button>
-    </div>
-
-    <div class="mt-6">
-        <h2 class="text-lg font-semibold text-gray-700 mb-2">Link na kameru</h2>
-        <p class="text-gray-600"><a href="http://172.20.20.134" class="text-blue-500 hover:underline">Kamera Atacama</a></p>
-        <p class="text-gray-600"><a href="http://172.20.20.131" class="text-blue-500 hover:underline">Kamera Astrofoto</a></p>
-    </div>
-
-    <script>
-        const C14_IP = "172.20.20.103";
-        const SSH_PORT = 2222;
-
-        function sendSSHCommand(command, elementId) {
-            fetch(`http://${C14_IP}:5000/ssh`, {  // Predpokladáme, že server beží na porte 5000
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ command: command }),
-            })
-            .then(response => {
+        async function sendRequest(endpoint, data = {}) {
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                return response.json();
-            })
-            .then(data => {
-                console.log(data);
-                if (elementId) {
-                    const statusElement = document.getElementById(elementId);
-                    if (statusElement) {
-                        statusElement.innerHTML = '<i class="fas fa-circle text-green-500"></i>';
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                if (elementId) {
-                    const statusElement = document.getElementById(elementId);
-                     if (statusElement) {
-                        statusElement.innerHTML = '<i class="fas fa-circle text-red-500"></i>';
-                    }
-                }
-            });
+                const responseData = await response.json();
+                return responseData;
+            } catch (error) {
+                console.error('Chyba:', error);
+                showToast(`Chyba: ${error.message}`, 'error');
+                throw error;
+            }
         }
 
-        document.getElementById('nout-on').addEventListener('click', () => sendSSHCommand('zasuvka NOUT on', 'nout-status'));
-        document.getElementById('nout-off').addEventListener('click', () => sendSSHCommand('zasuvka NOUT off', 'nout-status'));
-        document.getElementById('c14-on').addEventListener('click', () => sendSSHCommand('zasuvka C14 on', 'c14-status'));
-        document.getElementById('c14-off').addEventListener('click', () => sendSSHCommand('zasuvka C14 off', 'c14-status'));
-        document.getElementById('rc16-on').addEventListener('click', () => sendSSHCommand('zasuvka RC16 on', 'rc16-status'));
-        document.getElementById('rc16-off').addEventListener('click', () => sendSSHCommand('zasuvka RC16 off', 'rc16-status'));
-        document.getElementById('indistarter').addEventListener('click', () => sendSSHCommand('indistarter', 'indistarter-status'));
-        document.getElementById('strecha-sever').addEventListener('click', () => sendSSHCommand('strecha sever', 'strecha-status'));
-        document.getElementById('strecha-juh').addEventListener('click', () => sendSSHCommand('strecha juh', 'strecha-status'));
-        document.getElementById('az2000-wol').addEventListener('click', () => sendSSHCommand('wakeonlan 00:c0:08:a9:c2:32', 'az2000-status'));
-        document.getElementById('gm3000-wol').addEventListener('click', () => sendSSHCommand('wakeonlan 00:c0:08:aa:35:12', 'gm3000-status'));
-        document.getElementById('aktualizovat').addEventListener('click', () => sendSSHCommand('aktualizuj', 'aktualizovat-status'));
+        function updateLed(labelName, color) {
+            const ledElement = document.getElementById(labelName);
+            if (ledElement) {
+                ledElement.className = `led-${color}`;
+            }
+        }
+
+        function updateButtonState(buttonId, isEnabled) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = !isEnabled;
+                button.className = isEnabled
+                    ? 'bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded on-button'
+                    : 'bg-gray-400 text-white font-bold py-2 px-4 rounded disabled-button';
+            }
+        }
+
+    </script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-semibold text-center text-gray-800 mb-6">Ovládanie Hvezdárne - Central2</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white shadow-md rounded-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Ovládanie C14</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-600 text-sm font-bold mb-2">NOUT</label>
+                        <div class="flex flex-col items-start space-y-2">
+                            <button id="NOUT-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded on-button"
+                                    onclick="toggleZasuvkaC14(4, 'NOUT')">Zapnúť</button>
+                            <div id="NOUT-led" class="led-red"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-sm font-bold mb-2">C14</label>
+                        <div class="flex flex-col items-start space-y-2">
+                            <button id="C14-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded on-button"
+                                    onclick="toggleZasuvkaC14(3, 'C14')">Zapnúť</button>
+                            <div id="C14-led" class="led-red"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-sm font-bold mb-2">RC16</label>
+                        <div class="flex flex-col items-start space-y-2">
+                            <button id="RC16-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded on-button"
+                                    onclick="toggleZasuvkaC14(2, 'RC16')">Zapnúť</button>
+                            <div id="RC16-led" class="led-red"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full"
+                            onclick="spustiIndistarterC14()">Spustiť INDISTARTER na C14/UVEX</button>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-600 text-sm font-bold mb-2">Strecha Sever</label>
+                        <button class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded w-full"
+                                onclick="ovladajStrechuC14('sever')">Sever</button>
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-sm font-bold mb-2">Strecha Juh</label>
+                        <button class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded w-full"
+                                onclick="ovladajStrechuC14('juh')">Juh</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white shadow-md rounded-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">WAKE-ON-LAN</h2>
+                <div class="space-y-4">
+                    <button class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full"
+                            onclick="wakeOnLan('00:c0:08:a9:c2:32')">Zapni AZ2000</button>
+                    <button class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full"
+                            onclick="wakeOnLan('00:c0:08:aa:35:12')">Zapni GM3000</button>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-700 mt-6 mb-4">ONVIF Kamery</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-600 text-sm font-bold mb-2">Kamera Atacama</label>
+                        <img id="kamera-atacama-feed" src="http://172.20.20.134/stream_simple.jpeg" alt="Kamera Atacama" class="camera-feed" onclick="openCamera('http://172.20.20.134')">
+                    </div>
+                    <div>
+                        <label class="block text-gray-600 text-sm font-bold mb-2">Kamera Astrofoto</label>
+                        <img id="kamera-astrofoto-feed" src="http://172.20.20.131/stream_simple.jpeg" alt="Kamera Astrofoto" class="camera-feed" onclick="openCamera('http://172.20.20.131')">
+                    </div>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-700 mt-6 mb-4">OTA Aktualizácie</h2>
+                <button class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded w-full"
+                        onclick="aktualizujProgram()">Aktualizovať program</button>
+            </div>
+        </div>
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            Made by JaPySoft Tramtary & Gemini AI
+        </footer>
+    </div>
+
+    <script>
+        const zasuvkyState = {
+            'NOUT': false,
+            'C14': false,
+            'RC16': false
+        };
+
+        async function toggleZasuvkaC14(cislo_zasuvky, labelName) {
+            const buttonId = `${labelName}-button`;
+            const currentState = zasuvkyState[labelName];
+            const zapnut = !currentState;
+
+            // Disable button to prevent multiple clicks
+            updateButtonState(buttonId, false);
+
+            const data = { cislo_zasuvky, zapnut, label_name: labelName };
+            try {
+                const responseData = await sendRequest('/ovladaj_zasuvku_c14', data);
+                showToast(responseData.message);
+                updateLed(labelName, zapnut ? 'green' : 'red');
+                zasuvkyState[labelName] = zapnut;
+                updateButtonState(buttonId, true);
+                if (zapnut) {
+                    document.getElementById(buttonId).textContent = "Vypnúť";
+                    document.getElementById(buttonId).className = "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded off-button";
+                  }
+                else {
+                    document.getElementById(buttonId).textContent = "Zapnúť";
+                    document.getElementById(buttonId).className = "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded on-button";
+                }
+
+            } catch (error) {
+                console.error("Chyba pri ovládaní zásuvky:", error);
+                updateButtonState(buttonId, true);
+            }
+        }
+
+        async function spustiIndistarterC14() {
+            try {
+                const responseData = await sendRequest('/spusti_indistarter_c14');
+                showToast(responseData.message);
+            } catch (error) {
+                console.error("Chyba pri spúšťaní indistarter:", error);
+            }
+        }
+
+        async function ovladajStrechuC14(strana) {
+            const data = { strana };
+            try {
+                const responseData = await sendRequest('/ovladaj_strechu_c14', data);
+                showToast(responseData.message);
+            } catch (error) {
+                console.error("Chyba pri ovládaní strechy:", error);
+            }
+        }
+
+        async function wakeOnLan(mac_adresa) {
+            const data = { mac_adresa };
+            try {
+                const responseData = await sendRequest('/wake_on_lan', data);
+                showToast(responseData.message);
+            } catch (error) {
+                console.error("Chyba pri Wake-on-LAN:", error);
+            }
+        }
+
+        async function aktualizujProgram() {
+            try {
+                const responseData = await sendRequest('/aktualizuj_program');
+                showToast(responseData.message);
+            } catch (error) {
+                console.error("Chyba pri aktualizácii:", error);
+            }
+        }
+
+        function openCamera(url) {
+            window.open(url, '_blank');
+        }
+
+        // Aktualizácia kamery každých 5 sekúnd
+        setInterval(() => {
+            const atacamaFeed = document.getElementById('kamera-atacama-feed');
+            const astrofotoFeed = document.getElementById('kamera-astrofoto-feed');
+            atacamaFeed.src = `http://172.20.20.134/stream_simple.jpeg?t=${new Date().getTime()}`;
+            astrofotoFeed.src = `http://172.20.20.131/stream_simple.jpeg?t=${new Date().getTime()}`;
+        }, 5000);
     </script>
 </body>
 </html>
