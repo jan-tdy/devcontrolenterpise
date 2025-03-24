@@ -6,8 +6,8 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # Konštanty
-PROGRAM_GITHUB = "github.com/jan-tdy/devcontrolenterpise-ordervtdy01dpv-main/main.py"
-PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/main.py"
+PROGRAM_GITHUB = "github.com/jan-tdy/devcontrolenterpise/Central2/app.py"
+PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/app.py"
 SSH_USER = "dpv"
 SSH_PASS = "otj0711"  # POZOR: Heslo by nemalo byť v kóde
 C14_IP = "172.20.20.103"
