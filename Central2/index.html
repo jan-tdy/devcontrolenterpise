@@ -127,93 +127,18 @@
             });
         }
 
-        document.getElementById('nout-on').addEventListener('click', () => sendSSHCommand('zasuvka NOUT on nout-status', 'nout-status'));
-        document.getElementById('nout-off').addEventListener('click', () => sendSSHCommand('zasuvka NOUT off nout-status', 'nout-status'));
-        document.getElementById('c14-on').addEventListener('click', () => sendSSHCommand('zasuvka C14 on c14-status', 'c14-status'));
-        document.getElementById('c14-off').addEventListener('click', () => sendSSHCommand('zasuvka C14 off c14-status', 'c14-status'));
-        document.getElementById('rc16-on').addEventListener('click', () => sendSSHCommand('zasuvka RC16 on rc16-status', 'rc16-status'));
-        document.getElementById('rc16-off').addEventListener('click', () => sendSSHCommand('zasuvka RC16 off rc16-status', 'rc16-status'));
-        document.getElementById('indistarter').addEventListener('click', () => sendSSHCommand('indistarter indistarter-status', 'indistarter-status'));
-        document.getElementById('strecha-sever').addEventListener('click', () => sendSSHCommand('strecha sever strecha-status', 'strecha-status'));
-        document.getElementById('strecha-juh').addEventListener('click', () => sendSSHCommand('strecha juh strecha-status', 'strecha-status'));
+        document.getElementById('nout-on').addEventListener('click', () => sendSSHCommand('zasuvka NOUT on', 'nout-status'));
+        document.getElementById('nout-off').addEventListener('click', () => sendSSHCommand('zasuvka NOUT off', 'nout-status'));
+        document.getElementById('c14-on').addEventListener('click', () => sendSSHCommand('zasuvka C14 on', 'c14-status'));
+        document.getElementById('c14-off').addEventListener('click', () => sendSSHCommand('zasuvka C14 off', 'c14-status'));
+        document.getElementById('rc16-on').addEventListener('click', () => sendSSHCommand('zasuvka RC16 on', 'rc16-status'));
+        document.getElementById('rc16-off').addEventListener('click', () => sendSSHCommand('zasuvka RC16 off', 'rc16-status'));
+        document.getElementById('indistarter').addEventListener('click', () => sendSSHCommand('indistarter', 'indistarter-status'));
+        document.getElementById('strecha-sever').addEventListener('click', () => sendSSHCommand('strecha sever', 'strecha-status'));
+        document.getElementById('strecha-juh').addEventListener('click', () => sendSSHCommand('strecha juh', 'strecha-status'));
         document.getElementById('az2000-wol').addEventListener('click', () => sendSSHCommand('wakeonlan 00:c0:08:a9:c2:32', 'az2000-status'));
         document.getElementById('gm3000-wol').addEventListener('click', () => sendSSHCommand('wakeonlan 00:c0:08:aa:35:12', 'gm3000-status'));
         document.getElementById('aktualizovat').addEventListener('click', () => sendSSHCommand('aktualizuj', 'aktualizovat-status'));
-
-
-        //jednoduchy server na central2 (simulacia komunikacie s C14)
-        const http = require('http');
-        const { exec } = require('child_process');
-
-        const server = http.createServer((req, res) => {
-            if (req.method === 'POST' && req.url === '/ssh') {
-                let body = '';
-                req.on('data', chunk => {
-                    body += chunk.toString();
-                });
-                req.on('end', () => {
-                    const data = JSON.parse(body);
-                    const command = data.command;
-                    console.log(`Prijatý príkaz: ${command}`);
-
-                    //simulacia vykonania prikazu
-                    let prikazVykonavania = '';
-                    if (command.startsWith('zasuvka')) {
-                        const casti = command.split(' ');
-                        const zasuvka = casti[1];
-                        const stav = casti[2];
-                        const label_id = casti[3];
-                        if (stav === 'on') {
-                            prikazVykonavania = `echo "Zapínam zásuvku ${zasuvka} na C14"`;
-                        } else if (stav === 'off') {
-                            prikazVykonavania = `echo "Vypínam zásuvku ${zasuvka} na C14"`;
-                        }
-                         else {
-                            prikazVykonavania = `echo "Chybný príkaz pre zásuvku ${zasuvka} na C14"`;
-                        }
-                    } else if (command === 'indistarter') {
-                        prikazVykonavania = 'indistarter';
-                    } else if (command.startsWith('strecha')) {
-                        const casti = command.split(' ');
-                        const strana = casti[1];
-                        prikazVykonavania = `echo "Ovládam strechu na C14 na stranu ${strana}"`;
-                    }
-                    else if (command.startsWith('wakeonlan')) {
-                        const casti = command.split(' ');
-                        const mac_adresa = casti[1];
-                        prikazVykonavania = `echo "Odosielam WOL packet na ${mac_adresa}"`;
-                    }
-                    else if (command === 'aktualizuj') {
-                         prikazVykonavania = 'echo "Aktualizujem program z GitHubu"';
-                    }
-                    else {
-                        prikazVykonavania = 'echo "Neznámy príkaz"';
-                    }
-
-
-                    exec(prikazVykonavania, (error, stdout, stderr) => {
-                        if (error) {
-                            console.error(`Chyba pri vykonávaní príkazu: ${error}`);
-                            res.writeHead(500, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ error: 'Chyba pri vykonávaní príkazu' }));
-                            return;
-                        }
-                        console.log(`Výstup: ${stdout}`);
-                        console.error(`Chyby: ${stderr}`);  // Vypíšeme aj chyby
-
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ result: 'OK', output: stdout }));
-                    });
-                });
-            } else {
-                res.writeHead(404, { 'Content-Type': 'text/plain' });
-                res.end('Not Found');
-            }
-        });
-
-        server.listen(5000, '0.0.0.0', () => {
-            console.log('Server beží na http://0.0.0.0:5000/');
-        });
     </script>
 </body>
 </html>
