@@ -108,15 +108,15 @@
           <button class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full" onclick="wakeOnLan('00:c0:08:a9:c2:32')">Zapni AZ2000</button>
           <button class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full" onclick="wakeOnLan('00:c0:08:aa:35:12')">Zapni GM3000</button>
         </div>
-        <h2 class="text-xl font-semibold text-gray-700 mt-6 mb-4">ONVIF Kamery (TP-Link Vigi)</h2>
+        <h2 class="text-xl font-semibold text-gray-700 mt-6 mb-4">ONVIF Kamery</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-gray-600 text-sm font-bold mb-2">Kamera Atacama</label>
-            <img id="kamera-atacama-feed" src="http://USERNAME:PASSWORD@172.20.20.134/stream_simple.jpeg" alt="Kamera Atacama" class="camera-feed" onclick="openCamera('172.20.20.134')">
+            <img id="kamera-atacama-feed" src="" alt="Kamera Atacama" class="camera-feed" onclick="openCamera('atacama')">
           </div>
           <div>
             <label class="block text-gray-600 text-sm font-bold mb-2">Kamera Astrofoto</label>
-            <img id="kamera-astrofoto-feed" src="http://USERNAME:PASSWORD@172.20.20.131/stream_simple.jpeg" alt="Kamera Astrofoto" class="camera-feed" onclick="openCamera('172.20.20.131')">
+            <img id="kamera-astrofoto-feed" src="" alt="Kamera Astrofoto" class="camera-feed" onclick="openCamera('astrofoto')">
           </div>
         </div>
         <h2 class="text-xl font-semibold text-gray-700 mt-6 mb-4">OTA Aktualizácie</h2>
@@ -130,7 +130,43 @@
   <script>
     // Základná URL pre server
     const SERVER_URL = "http://172.20.20.133:5000";
+    
+    // Definícia kamier – každá má svoje prístupové údaje, port a cestu
+    const cameras = {
+      "atacama": {
+        ip: "172.20.20.134",
+        username: "USERNAME_ATACAMA", // Zmeň na správne meno
+        password: "PASSWORD_ATACAMA", // Zmeň na správne heslo
+        port: 554,                 // RTSP port
+        path: "/stream_simple.jpeg"
+      },
+      "astrofoto": {
+        ip: "172.20.20.131",
+        username: "USERNAME_ASTROFOTO", // Zmeň na správne meno
+        password: "PASSWORD_ASTROFOTO", // Zmeň na správne heslo
+        port: 2020,                // ONVIF port
+        path: "/stream_simple.jpeg"
+      }
+    };
 
+    // Funkcia na zostavenie URL pre kameru
+    function getCameraUrl(cameraKey) {
+      const cam = cameras[cameraKey];
+      return `http://${cam.username}:${cam.password}@${cam.ip}:${cam.port}${cam.path}`;
+    }
+    
+    // Inicializácia kamerových feedov
+    document.getElementById('kamera-atacama-feed').src = getCameraUrl('atacama');
+    document.getElementById('kamera-astrofoto-feed').src = getCameraUrl('astrofoto');
+    
+    // Automatická aktualizácia feedu každých 5 sekúnd (pridáva časovú značku pre vyhnutie sa cache)
+    setInterval(() => {
+      const timestamp = new Date().getTime();
+      document.getElementById('kamera-atacama-feed').src = getCameraUrl('atacama') + "?t=" + timestamp;
+      document.getElementById('kamera-astrofoto-feed').src = getCameraUrl('astrofoto') + "?t=" + timestamp;
+    }, 5000);
+    
+    // Zobrazenie toast notifikácie
     function showToast(message, type = 'success') {
       const toast = document.createElement('div');
       toast.className = `fixed bottom-4 right-4 bg-${type === 'success' ? 'green' : 'red'}-500 text-white py-2 px-4 rounded shadow-lg`;
@@ -138,8 +174,8 @@
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
     }
-
-    // Odošleme požiadavku metódou GET s parametrami v query stringu
+    
+    // Odoslanie GET požiadavky s query parametrami
     async function sendRequest(endpoint, data = {}) {
       const queryString = new URLSearchParams(data).toString();
       const url = SERVER_URL + endpoint + "?" + queryString;
@@ -156,14 +192,16 @@
         throw error;
       }
     }
-
+    
+    // Aktualizácia LED stavu
     function updateLed(labelName, color) {
       const ledElement = document.getElementById(labelName + "-led");
       if (ledElement) {
         ledElement.className = color === 'green' ? 'led-green' : 'led-red';
       }
     }
-
+    
+    // Aktualizácia stavu tlačidla
     function updateButtonState(buttonId, isEnabled) {
       const button = document.getElementById(buttonId);
       if (button) {
@@ -173,7 +211,8 @@
           : 'bg-gray-400 text-white font-bold py-2 px-4 rounded disabled-button';
       }
     }
-
+    
+    // Ovládanie zásuvky C14
     async function toggleZasuvkaC14(cislo_zasuvky, labelName) {
       const buttonId = `${labelName}-button`;
       const currentState = window.zasuvkyState ? window.zasuvkyState[labelName] : false;
@@ -199,7 +238,8 @@
         updateButtonState(buttonId, true);
       }
     }
-
+    
+    // Spustenie INDISTARTER na C14/UVEX
     async function spustiIndistarterC14() {
       try {
         const responseData = await sendRequest('/spusti_indistarter_c14');
@@ -208,7 +248,8 @@
         console.error("Chyba pri spúšťaní indistarter:", error);
       }
     }
-
+    
+    // Ovládanie strechy C14
     async function ovladajStrechuC14(strana) {
       const data = { strana };
       try {
@@ -218,7 +259,8 @@
         console.error("Chyba pri ovládaní strechy:", error);
       }
     }
-
+    
+    // Odoslanie Wake-on-LAN požiadavky
     async function wakeOnLan(mac_adresa) {
       const data = { mac_adresa };
       try {
@@ -228,7 +270,8 @@
         console.error("Chyba pri Wake-on-LAN:", error);
       }
     }
-
+    
+    // Aktualizácia programu
     async function aktualizujProgram() {
       try {
         const responseData = await sendRequest('/aktualizuj_program');
@@ -237,22 +280,12 @@
         console.error("Chyba pri aktualizácii:", error);
       }
     }
-
-    function openCamera(ip) {
-      const username = "USERNAME"; // Nahraď svojim používateľským menom
-      const password = "PASSWORD"; // Nahraď svojim heslom
-      const url = `http://${username}:${password}@${ip}/stream_simple.jpeg`;
+    
+    // Otvorenie kamery – prečíta URL z definovanej konfigurácie
+    function openCamera(cameraKey) {
+      const url = getCameraUrl(cameraKey);
       window.open(url, '_blank');
     }
-
-    // Automatická aktualizácia kamerového feedu každých 5 sekúnd
-    setInterval(() => {
-      const atacamaFeed = document.getElementById('kamera-atacama-feed');
-      const astrofotoFeed = document.getElementById('kamera-astrofoto-feed');
-      const timestamp = new Date().getTime();
-      atacamaFeed.src = `http://USERNAME:PASSWORD@172.20.20.134/stream_simple.jpeg?t=${timestamp}`;
-      astrofotoFeed.src = `http://USERNAME:PASSWORD@172.20.20.131/stream_simple.jpeg?t=${timestamp}`;
-    }, 5000);
   </script>
 </body>
 </html>
