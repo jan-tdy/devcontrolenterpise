@@ -45,8 +45,8 @@ class MainWindow(QtWidgets.QMainWindow):
             vypnut_button = QtWidgets.QPushButton("Vypnúť")
             self.status_labels[name] = QtWidgets.QLabel()
             self.status_labels[name].setPixmap(QtGui.QPixmap("led_red.png"))
-            zapnut_button.clicked.connect(lambda _, n=cislo: self.ovladaj_zasuvku_c14(n, True, name))
-            vypnut_button.clicked.connect(lambda _, n=cislo: self.ovladaj_zasuvku_c14(n, False, name))
+            zapnut_button.clicked.connect(lambda _, n=cislo, l_name=name: self.ovladaj_zasuvku_c14(n, True, l_name))
+            vypnut_button.clicked.connect(lambda _, n=cislo, l_name=name: self.ovladaj_zasuvku_c14(n, False, l_name))
             c14_zasuvky_layout.addWidget(label, i, 0)
             c14_zasuvky_layout.addWidget(zapnut_button, i, 1)
             c14_zasuvky_layout.addWidget(vypnut_button, i, 2)
@@ -112,4 +112,83 @@ class MainWindow(QtWidgets.QMainWindow):
             vystup = subprocess.check_output(prikaz, shell=True, password=SSH_PASS) #POZOR: Heslo by nemalo byt v kode
             print(vystup.decode())
             if zapnut:
-                self.status_lab
+                self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_green.png"))
+            else:
+                self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_red.png"))
+        except subprocess.CalledProcessError as e:
+            print(f"Chyba pri ovládaní zásuvky na C14: {e}")
+            self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_red.png"))
+
+    def spusti_indistarter_c14(self):
+        """Spustí INDISTARTER na C14 a UVEX-RPi cez SSH."""
+        try:
+            # Spustenie na C14
+            c14_prikaz = f"ssh {SSH_USER}@{C14_IP} indistarter"
+            c14_vystup = subprocess.check_output(c14_prikaz, shell=True, password=SSH_PASS) #POZOR: Heslo by nemalo byt v kode
+            print(f"INDISTARTER na C14: {c14_vystup.decode()}")
+
+            # Spustenie na UVEX-RPi (cez SSH z C14)
+            uvex_prikaz = f"ssh {SSH_USER}@{C14_IP} ssh {SSH_USER}@{AZ2000_IP} indistarter"
+            uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, password=SSH_PASS) #POZOR: Heslo by nemalo byt v kode
+            print(f"INDISTARTER na UVEX-RPi: {uvex_vystup.decode()}")
+        except subprocess.CalledProcessError as e:
+            print(f"Chyba pri spúšťaní INDISTARTERA na C14/UVEX: {e}")
+
+    def ovladaj_strechu_c14(self, strana):
+        """Ovláda strechu na C14 cez SSH."""
+        if strana == "sever":
+            prikaz1 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 2 ON"
+            prikaz2 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 2 OFF"
+        elif strana == "juh":
+            prikaz1 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 1 ON"
+            prikaz2 = f"ssh {SSH_USER}@{C14_IP} crelay -s BI TFT 1 OFF"
+        else:
+            print("Neplatná strana strechy.")
+            return
+
+        try:
+            subprocess.run(prikaz1, shell=True, check=True, password=SSH_PASS) #POZOR: Heslo by nemalo byt v kode
+            time.sleep(2)
+            subprocess.run(prikaz2, shell=True, check=True, password=SSH_PASS) #POZOR: Heslo by nemalo byt v kode
+            print(f"Strecha ({strana}) na C14 ovládaná.")
+        except subprocess.CalledProcessError as e:
+            print(f"Chyba pri ovládaní strechy ({strana}) na C14: {e}")
+
+    def wake_on_lan(self, mac_adresa):
+        """Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN."""
+        # Implementácia Wake-on-LAN
+        print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
+        try:
+            #from wakeonlan import send_magic_packet
+            #send_magic_packet(mac_adresa)
+            pass #odstranit pass a odkomentovat riadky vyssie
+        except Exception as e:
+            print(f"Chyba pri odosielaní magic packetu: {e}")
+    
+    def aktualizuj_program(self):
+        """Aktualizuje program z GitHub repozitára."""
+        try:
+            # 1. Stiahnutie aktualizovaného súboru
+            print("Aktualizujem program...")
+            prikaz_stiahnutie = f"curl -O https://{PROGRAM_GITHUB}"
+            subprocess.run(prikaz_stiahnutie, shell=True, check=True)
+
+            # 2. Nahradenie existujúceho súboru
+            prikaz_nahradenie = f"cp main.py {PROGRAM_CESTA}"
+            subprocess.run(prikaz_nahradenie, shell=True, check=True)
+
+            # 3. Reštart aplikácie
+            print("Program bol aktualizovaný. Reštartujem aplikáciu...")
+            # sem pride kod na restart
+            #sys.executable
+            pass #odstranit pass a odkomentovat riadok vyssie
+        except subprocess.CalledProcessError as e:
+            print(f"Chyba pri aktualizácii programu: {e}")
+        except Exception as e:
+            print(f"Neočakávaná chyba: {e}")
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    hlavne_okno = MainWindow()
+    hlavne_okno.show()
+    sys.exit(app.exec_())
