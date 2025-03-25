@@ -3,12 +3,12 @@ import subprocess
 import time
 import socket
 import webbrowser
-import os  # Import the os module
-from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
+import os
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QGridLayout, QLabel, QPushButton,
                              QLineEdit, QMessageBox, QFrame, QSizePolicy, QScrollArea)
-from PySide6.QtGui import QFont, QCursor
-from PySide6.QtCore import Qt, QTimer
+from PyQt5.QtGui import QFont, QCursor
+from PyQt5.QtCore import Qt, QTimer
 
 # Konštanty
 ZASUVKY = {
@@ -294,7 +294,7 @@ class MainWindow(QMainWindow):
 
         atacama_label = QLabel("ATACAMA")
         atacama_label.setFont(QFont("Arial", 14, QFont.Bold))
-        atacama_label.setAlignment(Qt.AlignCenter)  # Center the label
+        atacama_label.setAlignment(Qt.AlignCenter)
         atacama_layout.addWidget(atacama_label)
 
         zasuvky_frame = QFrame()
@@ -449,4 +449,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     main_window = MainWindow()
     main_window.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec_())
