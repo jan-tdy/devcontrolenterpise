@@ -63,9 +63,12 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
 
         # INDISTARTER
-        indistarter_button = QtWidgets.QPushButton("Spustiť INDISTARTER")
-        indistarter_button.clicked.connect(self.spusti_indistarter)
-        layout.addWidget(indistarter_button, 1, 0, 1, 3)
+        indistarter_c14_button = QtWidgets.QPushButton("Spustiť INDISTARTER C14")
+        indistarter_az2000_button = QtWidgets.QPushButton("Spustiť INDISTARTER AZ2000")
+        indistarter_c14_button.clicked.connect(self.spusti_indistarter_c14)
+        indistarter_az2000_button.clicked.connect(self.spusti_indistarter_az2000)
+        layout.addWidget(indistarter_c14_button, 1, 0, 1, 3)
+        layout.addWidget(indistarter_az2000_button, 2, 0, 1, 3) # Pridané tlačidlo pre AZ2000
 
         # Strecha
         strecha_layout = QtWidgets.QGridLayout()
@@ -77,7 +80,7 @@ class MainWindow(QtWidgets.QMainWindow):
         strecha_layout.addWidget(sever_button, 0, 0)
         strecha_layout.addWidget(juh_button, 0, 1)
         strecha_group.setLayout(strecha_layout)
-        layout.addWidget(strecha_group, 2, 0, 1, 3)
+        layout.addWidget(strecha_group, 3, 0, 1, 3) # Zmenené z 2 na 3
 
         group_box.setLayout(layout)
         self.grid_layout.addWidget(group_box, 0, 0)
@@ -127,20 +130,24 @@ class MainWindow(QtWidgets.QMainWindow):
             print(f"Chyba pri ovládaní zásuvky {cislo_zasuvky}: {e}")
             self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_def.png"))
 
-    def spusti_indistarter(self):
-        """Spustí príkaz `indistarter` na C14 a UVEX-RPi (cez SSH)."""
+    def spusti_indistarter_c14(self):
+        """Spustí príkaz `indistarter` na C14."""
         try:
-            # Spustenie na C14
             c14_prikaz = "indistarter"
             c14_vystup = subprocess.check_output(c14_prikaz, shell=True)
             print(f"INDISTARTER na C14: {c14_vystup.decode()}")
-
-            # Spustenie na UVEX-RPi (cez SSH)
-            uvex_prikaz = f"ssh {SSH_USER2}@{AZ2000_IP} {c14_prikaz}"
-            uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, password=SSH_PASS2) #POZOR: Heslo by nemalo byt v kode
-            print(f"INDISTARTER na UVEX-RPi: {uvex_vystup.decode()}")
         except subprocess.CalledProcessError as e:
-            print(f"Chyba pri spúšťaní INDISTARTERA: {e}")
+            print(f"Chyba pri spúšťaní INDISTARTERA na C14: {e}")
+
+    def spusti_indistarter_az2000(self):
+        """Spustí príkaz `indistarter` na UVEX-RPi (AZ2000) cez SSH."""
+        try:
+            uvex_prikaz = f"ssh {SSH_USER2}@{AZ2000_IP} indistarter"
+            uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, password=SSH_PASS2) #POZOR: Heslo by nemalo byt v kode
+            print(f"INDISTARTER na UVEX-RPi (AZ2000): {uvex_vystup.decode()}")
+        except subprocess.CalledProcessError as e:
+            print(f"Chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
+
 
     def ovladaj_strechu(self, strana):
         """Ovláda strechu (sever/juh) pomocou príkazu `crelay`."""
