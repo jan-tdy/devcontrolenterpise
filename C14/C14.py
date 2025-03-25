@@ -142,7 +142,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def spusti_indistarter_az2000(self):
         """Spustí príkaz `indistarter` na UVEX-RPi (AZ2000) cez SSH."""
         try:
-            uvex_prikaz = f"sshpass -p '{SSH_PASS2}' ssh {SSH_USER2}@{AZ2000_IP} indistarter"
+            uvex_prikaz = f"sshpass -p '{SSH_PASS2}' ssh -o StrictHostKeyChecking=no {SSH_USER2}@{AZ2000_IP} indistarter"
             uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True)
             print(f"INDISTARTER na UVEX-RPi (AZ2000): {uvex_vystup.decode()}")
         except subprocess.CalledProcessError as e:
