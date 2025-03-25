@@ -17,12 +17,13 @@ ZASUVKY = {
 PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
 CONFIG_FILE = "az2000_config.txt"  # Konfiguračný súbor
 UPDATE_SCRIPT = "update_c14.sh"  # Skript pre aktualizáciu
+SEND_MAGIC_PACKET_SCRIPT = "/home/dpv/send_magic_packet.sh" # Skript pre odosielanie magic packetov
 
 # Premenné pre konfiguráciu AZ2000 (predvolené hodnoty)
 AZ2000_IP = "172.20.20.116"
 SSH_USER2 = "pi2"
 SSH_PASS2 = "otj0711"
-
+GM3000_MAC = "00:c0:08:aa:35:12" # MAC adresa pre GM3000
 
 def load_config():
     """Načíta konfiguráciu AZ2000 z konfiguračného súboru."""
@@ -124,10 +125,10 @@ def wake_on_lan(mac_adresa):
     """Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN."""
     print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
     try:
-        send_magic_packet(mac_adresa)
-    except Exception as e:
+        subprocess.run([SEND_MAGIC_PACKET_SCRIPT, mac_adresa], check=True)
+    except subprocess.CalledProcessError as e:
         print(f"Chyba pri odosielaní magic packetu: {e}")
-
+        show_error_dialog(f"Chyba pri odosielaní WOL paketu: {e}")
 
 
 def aktualizuj_program():
@@ -185,7 +186,9 @@ class MainWindow(Gtk.Window):
         self.set_child(grid)
 
         # ATACAMA sekcia
-        atacama_frame = Gtk.Frame(label_text="ATACAMA")
+        atacama_frame = Gtk.Frame()
+        atacama_frame_label = Gtk.Label(label="ATACAMA")  # Vytvoríme Label pre text
+        atacama_frame.set_label_widget(atacama_frame_label)  # Nastavíme Label ako widget labelu rámčeka
         atacama_grid = Gtk.Grid()
         atacama_grid.set_column_spacing(5)
         atacama_grid.set_row_spacing(5)
@@ -193,7 +196,9 @@ class MainWindow(Gtk.Window):
         grid.attach(atacama_frame, 0, 0, 1, 1)
 
         # Zásuvky
-        zasuvky_frame = Gtk.Frame(label_text="Zásuvky")
+        zasuvky_frame = Gtk.Frame()
+        zasuvky_frame_label = Gtk.Label(label="Zásuvky")
+        zasuvky_frame.set_label_widget(zasuvky_frame_label)
         zasuvky_grid = Gtk.Grid()
         zasuvky_grid.set_column_spacing(5)
         zasuvky_grid.set_row_spacing(5)
@@ -224,7 +229,9 @@ class MainWindow(Gtk.Window):
         atacama_grid.attach(indistarter_az2000_button, 2, 0, 1, 3)
 
         # Strecha
-        strecha_frame = Gtk.Frame(label_text="Strecha")
+        strecha_frame = Gtk.Frame()
+        strecha_frame_label = Gtk.Label(label="Strecha")
+        strecha_frame.set_label_widget(strecha_frame_label)
         strecha_grid = Gtk.Grid()
         strecha_grid.set_column_spacing(5)
         strecha_grid.set_row_spacing(5)
@@ -238,7 +245,9 @@ class MainWindow(Gtk.Window):
         strecha_grid.attach(juh_button, 0, 1, 1, 1)
 
         # WAKE-ON-LAN sekcia
-        wake_frame = Gtk.Frame(label_text="WAKE-ON-LAN")
+        wake_frame = Gtk.Frame()
+        wake_frame_label = Gtk.Label(label="WAKE-ON-LAN")
+        wake_frame.set_label_widget(wake_frame_label)
         wake_grid = Gtk.Grid()
         wake_grid.set_column_spacing(5)
         wake_grid.set_row_spacing(5)
@@ -248,12 +257,14 @@ class MainWindow(Gtk.Window):
         az2000_button = Gtk.Button(label="Zapni AZ2000")
         gm3000_button = Gtk.Button(label="Zapni GM3000")
         az2000_button.connect("clicked", lambda button: wake_on_lan("00:c0:08:a9:c2:32"))
-        gm3000_button.connect("clicked", lambda button: wake_on_lan("00:c0:08:aa:35:12"))
+        gm3000_button.connect("clicked", lambda button: wake_on_lan(GM3000_MAC))
         wake_grid.attach(az2000_button, 0, 0, 1, 1)
         wake_grid.attach(gm3000_button, 0, 1, 1, 1)
 
         # OTA Aktualizácie sekcia
-        ota_frame = Gtk.Frame(label_text="OTA Aktualizácie")
+        ota_frame = Gtk.Frame()
+        ota_frame_label = Gtk.Label(label="OTA Aktualizácie")
+        ota_frame.set_label_widget(ota_frame_label)
         ota_grid = Gtk.Grid()
         ota_grid.set_column_spacing(5)
         ota_grid.set_row_spacing(5)
@@ -275,7 +286,9 @@ class MainWindow(Gtk.Window):
         ota_grid.attach(kamera_astrofoto_label, 2, 0, 1, 1)
 
         # Konfig sekcia
-        config_frame = Gtk.Frame(label_text="Konfigurácia AZ2000")
+        config_frame = Gtk.Frame()
+        config_frame_label = Gtk.Label(label="Konfigurácia AZ2000")
+        config_frame.set_label_widget(config_frame_label)
         config_grid = Gtk.Grid()
         config_grid.set_column_spacing(5)
         config_grid.set_row_spacing(5)
