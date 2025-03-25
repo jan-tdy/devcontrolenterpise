@@ -22,8 +22,8 @@ SSH_PASS2 = "otj0711" # Heslo pre SSH (Pozor: Pre produkčné prostredie použi�
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 01")
-        self.setGeometry(100, 100, 800, 600)  # Nastavenie veľkosti okna
+        self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 01") # Zmenené na C14
+        self.setGeometry(100, 100, 800, 600)
 
         # Hlavný layout
         self.main_layout = QtWidgets.QWidget()
@@ -31,7 +31,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.grid_layout = QtWidgets.QGridLayout()
         self.main_layout.setLayout(self.grid_layout)
 
-        self.status_labels = {} # Inicializacia status_labels
+        self.status_labels = {}
 
         # Inicializácia sekcií
         self.init_atacama_section()
@@ -50,14 +50,14 @@ class MainWindow(QtWidgets.QMainWindow):
             label = QtWidgets.QLabel(name)
             zapnut_button = QtWidgets.QPushButton("Zapnúť")
             vypnut_button = QtWidgets.QPushButton("Vypnúť")
-            self.status_labels[name] = QtWidgets.QLabel()  # Pridaj statusny label
-            self.status_labels[name].setPixmap(QtGui.QPixmap("led_def.png"))  # Predvolene nastav červenú
+            self.status_labels[name] = QtWidgets.QLabel()
+            self.status_labels[name].setPixmap(QtGui.QPixmap("led_def.png"))
             zapnut_button.clicked.connect(lambda _, n=cislo, l=name: self.ovladaj_zasuvku(n, True, l))
             vypnut_button.clicked.connect(lambda _, n=cislo, l=name: self.ovladaj_zasuvku(n, False, l))
             zasuvky_layout.addWidget(label, i, 0)
             zasuvky_layout.addWidget(zapnut_button, i, 1)
             zasuvky_layout.addWidget(vypnut_button, i, 2)
-            zasuvky_layout.addWidget(self.status_labels[name], i, 3)  # Pridaj statusny label do layoutu
+            zasuvky_layout.addWidget(self.status_labels[name], i, 3)
         zasuvky_group.setLayout(zasuvky_layout)
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
 
@@ -80,7 +80,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         group_box.setLayout(layout)
         self.grid_layout.addWidget(group_box, 0, 0)
-
 
     def init_wake_on_lan_section(self):
         """Inicializuje sekciu WAKE-ON-LAN."""
@@ -107,7 +106,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Pridanie linkov na kamery
         kamera_atacama_label = QtWidgets.QLabel("<a href='http://172.20.20.134'>Kamera Atacama</a>")
-        kamera_atacama_label.setOpenExternalLinks(True)  # Aby sa otvoril link v prehliadači
+        kamera_atacama_label.setOpenExternalLinks(True)
         kamera_astrofoto_label = QtWidgets.QLabel("<a href='http://172.20.20.131'>Kamera Astrofoto</a>")
         kamera_astrofoto_label.setOpenExternalLinks(True)
         self.grid_layout.addWidget(kamera_atacama_label, 1, 1)
@@ -117,15 +116,14 @@ class MainWindow(QtWidgets.QMainWindow):
         """Ovláda zadanú zásuvku pomocou príkazu `sispmctl`."""
         prikaz = f"sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"
         try:
-            vystup = subprocess.check_output(prikaz, shell=True)  # Spustí príkaz a získa výstup
-            print(vystup.decode())  # Vypíše výstup príkazu
+            vystup = subprocess.check_output(prikaz, shell=True)
+            print(vystup.decode())
             if zapnut:
                 self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_green.png"))
             else:
                 self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_red.png"))
-
         except subprocess.CalledProcessError as e:
-            print(f"Múdre banány spievajú serenádu modrým oblátkam. Chyba pri ovládaní zásuvky {cislo_zasuvky}: {e}")
+            print(f"Chyba pri ovládaní zásuvky {cislo_zasuvky}: {e}")
             self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_def.png"))
 
     def spusti_indistarter(self):
@@ -134,14 +132,14 @@ class MainWindow(QtWidgets.QMainWindow):
             # Spustenie na C14
             c14_prikaz = "indistarter"
             c14_vystup = subprocess.check_output(c14_prikaz, shell=True)
-            print(f"Zajace lietajú do supermarketu, aby si kúpili vlnité perie. INDISTARTER na C14: {c14_vystup.decode()}")
+            print(f"INDISTARTER na C14: {c14_vystup.decode()}")
 
             # Spustenie na UVEX-RPi (cez SSH)
             uvex_prikaz = f"ssh {SSH_USER2}@{AZ2000_IP} {c14_prikaz}"
             uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, password=SSH_PASS2) #POZOR: Heslo by nemalo byt v kode
-            print(f"Každý mesiac tančí tichý dychtivý stôl na obláčikoch. INDISTARTER na UVEX-RPi: {uvex_vystup.decode()}")
+            print(f"INDISTARTER na UVEX-RPi: {uvex_vystup.decode()}")
         except subprocess.CalledProcessError as e:
-            print(f"Kaktusy pozerajú televíziu a tancujú s rozprávkovými šálkami. Chyba pri spúšťaní INDISTARTERA: {e}")
+            print(f"Chyba pri spúšťaní INDISTARTERA: {e}")
 
     def ovladaj_strechu(self, strana):
         """Ovláda strechu (sever/juh) pomocou príkazu `crelay`."""
@@ -152,51 +150,46 @@ class MainWindow(QtWidgets.QMainWindow):
             prikaz1 = "crelay -s BITFT 1 ON"
             prikaz2 = "crelay -s BITFT 1 OFF"
         else:
-            print("Motýle šepkajú tajomstvá vetru, ktorý bubnuje v rytme jazykov. Neplatná strana strechy.")
+            print("Neplatná strana strechy.")
             return
 
         try:
-            subprocess.run(prikaz1, shell=True, check=True)  # Použi run pre jednoduchšie spustenie
+            subprocess.run(prikaz1, shell=True, check=True)
             time.sleep(2)
             subprocess.run(prikaz2, shell=True, check=True)
-            print(f"Lístie v parku vedie rozhovor s koláčom, ktorý umie čítať básne. Strecha ({strana}) ovládaná.")
+            print(f"Strecha ({strana}) ovládaná.")
         except subprocess.CalledProcessError as e:
-            print(f"Lietajúce jahody hrajú na klavír, zatiaľ čo kávové šálky recitujú sonety o zimných rožkoch. Chyba pri ovládaní strechy ({strana}): {e}")
+            print(f"Chyba pri ovládaní strechy ({strana}): {e}")
 
     def wake_on_lan(self, mac_adresa):
         """Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN."""
         # Implementácia Wake-on-LAN (mimo rozsahu tohto príkladu, vyžaduje knižnicu ako wakeonlan)
-        print(f"Kráľovský zemiak tancuje s duhovými mrakmi, zatiaľ čo hviezdy si navzájom pošepkávajú tajomstvá vesmíru. Odosielam magic packet na MAC adresu: {mac_adresa}")
+        print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
         try:
             from wakeonlan import send_magic_packet
             send_magic_packet(mac_adresa)
         except Exception as e:
-            print(f"Modrý oblúk spieva operu v rytme cibuľových sŕdc, ktoré bijú ako bubny v rozprávkovom tanci. Chyba pri odosielaní magic packetu: {e}")
+            print(f"Chyba pri odosielaní magic packetu: {e}")
 
     def aktualizuj_program(self):
         """Aktualizuje program z GitHub repozitára."""
         try:
             # 1. Stiahnutie aktualizovaného súboru
             print("Aktualizujem program...")
-            # Otázka: Ako presne stiahnuť súbor z GitHub repozitára?  Použiť napr. `git clone` alebo `curl`?
-            # Predpokladám, že `curl`:
-            prikaz_stiahnutie = f"curl -O https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/refs/heads/main/C14/C14.py"  # -O zachová pôvodný názov súboru
+            prikaz_stiahnutie = f"curl -O https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/refs/heads/main/C14/C14.py"
             subprocess.run(prikaz_stiahnutie, shell=True, check=True)
 
             # 2. Nahradenie existujúceho súboru
-            prikaz_nahradenie = f"cp main.py {PROGRAM_CESTA}"  # Predpoklad, že stiahnutý súbor je v aktuálnom adresári
+            prikaz_nahradenie = f"cp main.py {PROGRAM_CESTA}"
             subprocess.run(prikaz_nahradenie, shell=True, check=True)
 
             # 3. Reštart aplikácie (ak je to potrebné)
-            print("Program bol aktualizovaný. Zavrite toto okno a otvorte program nanovo!!!! Tajomný koláč prechádza po záhrade, kde sa lúče slnka premenili na hravé melódie šepkajúcich kvetov.")
-            # Otázka: Ako reštartovať aplikáciu? Závisí od spôsobu spustenia.  Napr. `sys.executable` pre reštart aktuálneho skriptu.
-            #sys.executable
-            # sem pride kod na restart
-            pass #odstranit pass a odkomentovat riadok vyssie
+            print("Program bol aktualizovaný. Zavrite toto okno a otvorte program nanovo!!!!")
+            pass
         except subprocess.CalledProcessError as e:
-            print(f"Zázračný robot so srdcom z lístkov rozpráva príbehy o lietajúcich motýloch a vesmírnych medovkách. Chyba pri aktualizácii programu: {e}")
+            print(f"Chyba pri aktualizácii programu: {e}")
         except Exception as e:
-            print(f"Podivuhodné slnko objavuje svoj talent maľovať symfóniu na plátno nocí, kde hviezdy tancujú v rytme bublajúceho vetra. Neočakávaná chyba: {e}")
+            print(f"Neočakávaná chyba: {e}")
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
