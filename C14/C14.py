@@ -1,41 +1,43 @@
-import sys
-import subprocess
-import time
-import gi
-import threading
-import os
+import sys  # Importuje modul sys pre prácu so systémovými premennými a funkciami.
+import subprocess  # Importuje modul subprocess pre spúšťanie externých príkazov.
+import time  # Importuje modul time pre prácu s časom.
+import gi  # Importuje modul gi, ktorý je základom pre knižnicu PyGObject.
+import threading # Importuje modul threading pre prácu s vláknami
+import os # Importuje modul os pre prácu s operačným systémom
+import socket # Importuje modul socket pre prácu so sieťovými socketmi
 
-gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, GLib
+gi.require_version("Gtk", "4.0")  # Požaduje verziu 4.0 knižnice Gtk.
+from gi.repository import Gtk, GLib  # Importuje triedy Gtk a GLib z gi.repository.
 
 # Konštanty
-ZASUVKY = {
+ZASUVKY = {  # Slovník definujúci názvy a čísla zásuviek.
     "NOUT": 4,
     "C14": 3,
     "RC16": 2,
 }
-PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
+PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"  # Cesta k spustiteľnému súboru programu.
 CONFIG_FILE = "az2000_config.txt"  # Konfiguračný súbor
-UPDATE_SCRIPT = "update_c14.sh"  # Skript pre aktualizáciu
-SEND_MAGIC_PACKET_SCRIPT = "/home/dpv/send_magic_packet.sh" # Skript pre odosielanie magic packetov
+# UPDATE_SCRIPT = "update_c14.sh"  # Skript pre aktualizáciu - PRESUNUTÉ DO KÓDU
+# SEND_MAGIC_PACKET_SCRIPT = "/home/dpv/send_magic_packet.sh"  # Skript pre odosielanie magic packetov - ODSTRÁNENÉ
 
 # Premenné pre konfiguráciu AZ2000 (predvolené hodnoty)
-AZ2000_IP = "172.20.20.116"
-SSH_USER2 = "pi2"
-SSH_PASS2 = "otj0711"
-GM3000_MAC = "00:c0:08:aa:35:12" # MAC adresa pre GM3000
+AZ2000_IP = "172.20.20.116"  # Predvolená IP adresa pre AZ2000.
+SSH_USER2 = "pi2"  # Predvolené používateľské meno pre SSH pripojenie k AZ2000.
+SSH_PASS2 = "otj0711"  # Predvolené heslo pre SSH pripojenie k AZ2000.
+GM3000_MAC = "00:c0:08:aa:35:12"  # MAC adresa pre GM3000
+
 
 def load_config():
     """Načíta konfiguráciu AZ2000 z konfiguračného súboru."""
-    global AZ2000_IP, SSH_USER2, SSH_PASS2
+    global AZ2000_IP, SSH_USER2, SSH_PASS2  # Používa globálne premenné.
     try:
-        with open(CONFIG_FILE, "r") as f:
-            lines = f.readlines()
-            if len(lines) >= 3:
-                AZ2000_IP = lines[0].strip()
-                SSH_USER2 = lines[1].strip()
-                SSH_PASS2 = lines[2].strip()
-    except FileNotFoundError:
+        with open(CONFIG_FILE, "r") as f:  # Otvorí konfiguračný súbor na čítanie.
+            lines = f.readlines()  # Načíta riadky zo súboru.
+            if len(lines) >= 3:  # Kontroluje, či sú v súbore aspoň 3 riadky.
+                AZ2000_IP = lines[0].strip()  # Načíta a otrimuje IP adresu.
+                SSH_USER2 = lines[1].strip()  # Načíta a otrimuje používateľské meno.
+                SSH_PASS2 = lines[2].strip()  # Načíta a otrimuje heslo.
+    except FileNotFoundError:  # Obsluhuje prípad, keď konfiguračný súbor neexistuje.
         print("Konfiguračný súbor nebol nájdený. Používajú sa predvolené hodnoty.")
         # Vytvor prázdny konfiguračný súbor, aby sa predišlo opakovaným chybám pri ďalších pokusoch o načítanie
         try:
@@ -43,7 +45,7 @@ def load_config():
                 pass
         except Exception as e:
             print(f"Chyba pri vytváraní prázdneho konfiguračného súboru: {e}")
-    except Exception as e:
+    except Exception as e:  # Obsluhuje ostatné výnimky pri čítaní súboru.
         print(f"Chyba pri načítaní konfigurácie: {e}")
 
 
@@ -51,13 +53,13 @@ def load_config():
 def save_config(ip, user, password):
     """Uloží konfiguráciu AZ2000 do konfiguračného súboru."""
     try:
-        with open(CONFIG_FILE, "w") as f:
-            f.write(f"{ip}\n")
-            f.write(f"{user}\n")
-            f.write(f"{password}\n")
+        with open(CONFIG_FILE, "w") as f:  # Otvorí konfiguračný súbor na zápis.
+            f.write(f"{ip}\n")  # Zapisuje IP adresu.
+            f.write(f"{user}\n")  # Zapisuje používateľské meno.
+            f.write(f"{password}\n")  # Zapisuje heslo.
         print("Konfigurácia AZ2000 bola uložená.")
         return True
-    except Exception as e:
+    except Exception as e:  # Obsluhuje výnimky pri zápise do súboru.
         print(f"Chyba pri ukladaní konfigurácie: {e}")
         return False
 
@@ -65,46 +67,46 @@ def save_config(ip, user, password):
 
 def ovladaj_zasuvku(cislo_zasuvky, zapnut, label_name):
     """Ovláda zadanú zásuvku pomocou príkazu `sispmctl`."""
-    prikaz = f"sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"
+    prikaz = f"sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"  # Vytvorí príkaz pre `sispmctl`.
     try:
-        vystup = subprocess.check_output(prikaz, shell=True)
-        print(vystup.decode())
-        GLib.idle_add(set_led_status, label_name, "green" if zapnut else "red")
-    except subprocess.CalledProcessError as e:
+        vystup = subprocess.check_output(prikaz, shell=True)  # Spustí príkaz a získa výstup.
+        print(vystup.decode())  # Dekóduje a vypíše výstup.
+        GLib.idle_add(set_led_status, label_name, "green" if zapnut else "red")  # Aktualizuje LED v GUI.
+    except subprocess.CalledProcessError as e:  # Obsluhuje chyby pri spúšťaní príkazu.
         print(f"Chyba pri ovládaní zásuvky {cislo_zasuvky}: {e}")
-        GLib.idle_add(set_led_status, label_name, "def")
+        GLib.idle_add(set_led_status, label_name, "def")  # Nastaví LED na predvolenú farbu pri chybe.
 
 
 
 def spusti_indistarter_c14():
     """Spustí príkaz `indistarter` na C14."""
     try:
-        c14_prikaz = "indistarter"
-        c14_vystup = subprocess.check_output(c14_prikaz, shell=True)
-        print(f"INDISTARTER na C14: {c14_vystup.decode()}")
-    except subprocess.CalledProcessError as e:
+        c14_prikaz = "indistarter"  # Príkaz na spustenie indistarter
+        c14_vystup = subprocess.check_output(c14_prikaz, shell=True)  # Spustí príkaz a získa výstup
+        print(f"INDISTARTER na C14: {c14_vystup.decode()}")  # Vypíše výstup
+    except subprocess.CalledProcessError as e:  # Obslúži chybu pri spustení príkazu
         print(f"Chyba pri spúšťaní INDISTARTERA na C14: {e}")
 
 
 
 def spusti_indistarter_az2000():
     """Spustí príkaz `indistarter` na UVEX-RPi (AZ2000) cez SSH."""
-    global AZ2000_IP, SSH_USER2, SSH_PASS2
+    global AZ2000_IP, SSH_USER2, SSH_PASS2  # Používa globálne premenné pre pripojenie k AZ2000
     try:
-        uvex_prikaz = f"sshpass -p '{SSH_PASS2}' ssh -o StrictHostKeyChecking=no {SSH_USER2}@{AZ2000_IP} 'indistarter'"
-        subprocess.run(uvex_prikaz, shell=True, check=True)
+        uvex_prikaz = f"sshpass -p '{SSH_PASS2}' ssh -o StrictHostKeyChecking=no {SSH_USER2}@{AZ2000_IP} 'indistarter'"  # Príkaz pre spustenie indistarter cez SSH
+        subprocess.run(uvex_prikaz, shell=True, check=True)  # Spustí príkaz cez shell
         print(f"INDISTARTER na UVEX-RPi (AZ2000) spustený.")
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:  # Obslúži chybu pri spustení príkazu
         print(f"Chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
 
 
 
 def ovladaj_strechu(strana):
     """Ovláda strechu (sever/juh) pomocou príkazu `crelay`."""
-    if strana == "sever":
+    if strana == "sever":  # Ak je strana sever
         prikaz1 = "crelay -s BITFT 2 ON"
         prikaz2 = "crelay -s BITFT 2 OFF"
-    elif strana == "juh":
+    elif strana == "juh":  # Ak je strana juh
         prikaz1 = "crelay -s BITFT 1 ON"
         prikaz2 = "crelay -s BITFT 1 OFF"
     else:
@@ -112,11 +114,11 @@ def ovladaj_strechu(strana):
         return
 
     try:
-        subprocess.run(prikaz1, shell=True, check=True)
-        time.sleep(2)
-        subprocess.run(prikaz2, shell=True, check=True)
+        subprocess.run(prikaz1, shell=True, check=True)  # Spustí prvý príkaz
+        time.sleep(2)  # Počká 2 sekundy
+        subprocess.run(prikaz2, shell=True, check=True)  # Spustí druhý príkaz
         print(f"Strecha ({strana}) ovládaná.")
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError as e:  # Obslúži chybu pri spustení príkazu
         print(f"Chyba pri ovládaní strechy ({strana}): {e}")
 
 
@@ -124,66 +126,88 @@ def ovladaj_strechu(strana):
 def wake_on_lan(mac_adresa):
     """Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN."""
     print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
+    # Nahradzujeme volanie externého skriptu priamym kódom
     try:
-        subprocess.run([SEND_MAGIC_PACKET_SCRIPT, mac_adresa], check=True)
-    except subprocess.CalledProcessError as e:
+        mac_bytes = bytes.fromhex(mac_adresa.replace(':', ''))  # Prekonvertuje MAC adresu na bajty
+        packet = b'\xff' * 6 + mac_bytes * 16  # Vytvorí magic packet
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:  # Vytvorí UDP socket
+            s.sendto(packet, ('<broadcast>', 9))  # Odošle packet na broadcast adresu
+        print("Magic packet odoslaný.")
+    except Exception as e:
         print(f"Chyba pri odosielaní magic packetu: {e}")
         show_error_dialog(f"Chyba pri odosielaní WOL paketu: {e}")
 
 
+
 def aktualizuj_program():
-    """Aktualizuje program z GitHub repozitára pomocou skriptu."""
+    """Aktualizuje program z GitHub repozitára. Implementované priamo v Pythone."""
     try:
-        # Spustíme skript na aktualizáciu v samostatnom procese
-        subprocess.Popen([UPDATE_SCRIPT], close_fds=True)
-        print("Aktualizácia programu prebieha na pozadí. Aplikácia bude reštartovaná po dokončení.")
-        # Ukončíme aplikáciu GTK, skript ju reštartuje
-        GLib.idle_add(Gtk.main_quit)
+        print("Aktualizujem program...")
+        # 1. Zastavíme bežiaci program.
+        prikaz_zastavenie = "pkill -f 'python3 /home/dpv/j44softapps-socketcontrol/C14.py'"
+        subprocess.run(prikaz_zastavenie, shell=True, check=False)  # check=False, aby nehodilo chybu, ak program nebeží
+
+        # 2. Prejdeme do správneho adresára.
+        os.chdir("/home/dpv/j44softapps-socketcontrol/")
+
+        # 3. Stiahneme najnovšiu verziu skriptu.
+        url = "https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"
+        prikaz_stiahnutie = f"curl -O {url}"
+        subprocess.run(prikaz_stiahnutie, shell=True, check=True)
+        print("Stiahnutá nová verzia programu.")
+
+        # 4. Reštartujeme program.
+        prikaz_restart = "python3 /home/dpv/j44softapps-socketcontrol/C14.py &"
+        subprocess.Popen(prikaz_restart, shell=True, close_fds=True)  # Používame Popen pre reštart na pozadí
+        print("Program reštartovaný na pozadí.")
+        GLib.idle_add(Gtk.main_quit)  # Ukončíme GTK aplikáciu
     except Exception as e:
-        print(f"Chyba pri spúšťaní aktualizačného skriptu: {e}")
+        print(f"Chyba pri aktualizácii: {e}")
         show_error_dialog(f"Chyba pri aktualizácii: {e}")
+
 
 
 def set_led_status(label_name, farba):
     """Nastaví farbu LEDky v GUI pomocou CSS štýlov."""
-    label = status_labels[label_name]
+    label = status_labels[label_name]  # Získa Label objekt zo slovníka status_labels
     if farba == "green":
-        label.set_markup('<span foreground="green">●</span>')
+        label.set_markup('<span foreground="green">●</span>')  # Nastaví zelenú farbu
     elif farba == "red":
-        label.set_markup('<span foreground="red">●</span>')
+        label.set_markup('<span foreground="red">●</span>')  # Nastaví červenú farbu
     else:
         label.set_markup('<span foreground="gray">●</span>')  # Alebo inú predvolenú farbu
+
 
 
 def show_error_dialog(message):
     """Zobrazí chybový dialóg."""
     dialog = Gtk.MessageDialog(
         parent=None,  # Parent okno môže byť None, ak nemáme hlavné okno
-        flags=Gtk.DialogFlags.MODAL,
-        message_type=Gtk.MessageType.ERROR,
-        buttons=Gtk.ButtonsType.OK,
-        text=message,
+        flags=Gtk.DialogFlags.MODAL,  # Dialóg je modálny
+        message_type=Gtk.MessageType.ERROR,  # Typ správy je ERROR
+        buttons=Gtk.ButtonsType.OK,  # Tlačidlo OK
+        text=message,  # Text správy
     )
-    dialog.run()
-    dialog.destroy()
+    dialog.run()  # Spustí dialóg
+    dialog.destroy()  # Zničí dialóg po zatvorení
 
 
 
 class MainWindow(Gtk.Window):
     def __init__(self):
-        super().__init__(title="Ovládanie Hvezdárne - C14 - GTK 4 verzia")
-        self.set_default_size(800, 600)
+        super().__init__(title="Ovládanie Hvezdárne - C14 - GTK 4 verzia")  # Volá konštruktor rodičovskej triedy
+        self.set_default_size(800, 600)  # Nastaví predvolenú veľkosť okna
         self.margin_start = 10
         self.margin_end = 10
         self.margin_top = 10
         self.margin_bottom = 10
 
-        load_config()
+        load_config()  # Načíta konfiguráciu zo súboru
 
-        grid = Gtk.Grid()
-        grid.set_column_spacing(10)
-        grid.set_row_spacing(10)
-        self.set_child(grid)
+        grid = Gtk.Grid()  # Vytvorí Grid layout manager
+        grid.set_column_spacing(10)  # Nastaví medzery medzi stĺpcami
+        grid.set_row_spacing(10)  # Nastaví medzery medzi riadkami
+        self.set_child(grid)  # Nastaví Grid ako hlavný kontajner okna
 
         # ATACAMA sekcia
         atacama_frame = Gtk.Frame()
@@ -205,20 +229,20 @@ class MainWindow(Gtk.Window):
         zasuvky_frame.set_child(zasuvky_grid)
         atacama_grid.attach(zasuvky_frame, 0, 0, 1, 1)
 
-        global status_labels
+        global status_labels  # Používa globálny slovník pre ukladanie Label objektov
         status_labels = {}
-        for i, (name, cislo) in enumerate(ZASUVKY.items()):
-            label = Gtk.Label(label=name)
-            zapnut_button = Gtk.Button(label="Zapnúť")
-            vypnut_button = Gtk.Button(label="Vypnúť")
-            status_labels[name] = Gtk.Label()
-            set_led_status(name, "def")
-            zapnut_button.connect("clicked", lambda button, n=cislo, l=name: ovladaj_zasuvku(n, True, l))
-            vypnut_button.connect("clicked", lambda button, n=cislo, l=name: ovladaj_zasuvku(n, False, l))
-            zasuvky_grid.attach(label, i, 0, 1, 1)
-            zasuvky_grid.attach(zapnut_button, i, 1, 1, 1)
-            zasuvky_grid.attach(vypnut_button, i, 2, 1, 1)
-            zasuvky_grid.attach(status_labels[name], i, 3, 1, 1)
+        for i, (name, cislo) in enumerate(ZASUVKY.items()):  # Prechádza cez zásuvky
+            label = Gtk.Label(label=name)  # Vytvorí Label pre názov zásuvky
+            zapnut_button = Gtk.Button(label="Zapnúť")  # Vytvorí tlačidlo pre zapnutie
+            vypnut_button = Gtk.Button(label="Vypnúť")  # Vytvorí tlačidlo pre vypnutie
+            status_labels[name] = Gtk.Label()  # Vytvorí Label pre stav zásuvky
+            set_led_status(name, "def")  # Nastaví predvolený stav LED
+            zapnut_button.connect("clicked", lambda button, n=cislo, l=name: ovladaj_zasuvku(n, True, l))  # Pripojí funkciu pre zapnutie
+            vypnut_button.connect("clicked", lambda button, n=cislo, l=name: ovladaj_zasuvku(n, False, l))  # Pripojí funkciu pre vypnutie
+            zasuvky_grid.attach(label, i, 0, 1, 1)  # Pridá Label do gridu
+            zasuvky_grid.attach(zapnut_button, i, 1, 1, 1)  # Pridá tlačidlo pre zapnutie do gridu
+            zasuvky_grid.attach(vypnut_button, i, 2, 1, 1)  # Pridá tlačidlo pre vypnutie do gridu
+            zasuvky_grid.attach(status_labels[name], i, 3, 1, 1)  # Pridá Label pre stav do gridu
 
         # INDISTARTER
         indistarter_c14_button = Gtk.Button(label="Spustiť INDISTARTER C14")
@@ -318,46 +342,46 @@ class MainWindow(Gtk.Window):
         save_button.connect("clicked", self.save_config)
         config_grid.attach(save_button, 3, 0, 1, 2)
 
-        self.show()
+        self.show()  # Zobrazí hlavné okno
 
     def save_config(self, button):
         """Uloží konfiguráciu AZ2000 do konfiguračného súboru."""
-        global AZ2000_IP, SSH_USER2, SSH_PASS2
-        ip = self.ip_input.get_text()
-        user = self.user_input.get_text()
-        password = self.password_input.get_text()
-        if save_config(ip, user, password):
-            dialog = Gtk.MessageDialog(
+        global AZ2000_IP, SSH_USER2, SSH_PASS2  # Používa globálne premenné
+        ip = self.ip_input.get_text()  # Získa text z IP vstupného poľa
+        user = self.user_input.get_text()  # Získa text z používateľského mena
+        password = self.password_input.get_text()  # Získa text z hesla
+        if save_config(ip, user, password):  # Volá funkciu pre uloženie konfigurácie
+            dialog = Gtk.MessageDialog(  # Vytvorí informačný dialóg
                 parent=self,
                 flags=Gtk.DialogFlags.MODAL,
                 message_type=Gtk.MessageType.INFO,
                 buttons=Gtk.ButtonsType.OK,
                 text="Konfigurácia AZ2000 bola uložená.",
             )
-            dialog.run()
-            dialog.destroy()
-            AZ2000_IP = ip
+            dialog.run()  # Spustí dialóg
+            dialog.destroy()  # Zničí dialóg po zatvorení
+            AZ2000_IP = ip  # Aktualizuje globálne premenné
             SSH_USER2 = user
             SSH_PASS2 = password
         else:
-            dialog = Gtk.MessageDialog(
+            dialog = Gtk.MessageDialog(  # Vytvorí chybový dialóg
                 parent=self,
                 flags=Gtk.DialogFlags.MODAL,
                 message_type=Gtk.MessageType.ERROR,
                 buttons=Gtk.ButtonsType.OK,
                 text="Chyba pri ukladaní konfigurácie.",
             )
-            dialog.run()
-            dialog.destroy()
+            dialog.run()  # Spustí dialóg
+            dialog.destroy()  # Zničí dialóg po zatvorení
 
 
 
 def main():
     """Hlavná funkcia, volaná pri spustení programu."""
     load_config()
-    app = Gtk.Application(application_id="com.example.C14Control")
-    app.connect("activate", lambda app: MainWindow())
-    app.run()
+    app = Gtk.Application(application_id="com.example.C14Control")  # Vytvorí Gtk aplikáciu
+    app.connect("activate", lambda app: MainWindow())  # Pripojí signál "activate" k vytvoreniu hlavného okna
+    app.run()  # Spustí aplikáciu
 
 
 
