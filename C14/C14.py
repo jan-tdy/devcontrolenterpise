@@ -3,6 +3,7 @@ import subprocess
 import time
 import socket
 import webbrowser
+import os  # Import the os module
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QGridLayout, QLabel, QPushButton,
                              QLineEdit, QMessageBox, QFrame, QSizePolicy, QScrollArea)
