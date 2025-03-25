@@ -197,103 +197,15 @@ class MainWindow(QMainWindow):
         self.main_widget.setLayout(self.main_layout)
         load_config()
 
-        # Nastavenie globálneho štýlu aplikácie
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #FFFFFF; /* Biele pozadie */
-                color: #2c3e50;
-            }
-            QWidget {
-                font-family: 'Arial', sans-serif;
-                font-size: 14px;
-                color: #2c3e50;
-            }
-            QLabel {
-                color: #2c3e50;
-            }
-            QPushButton {
-                border: 1px solid #7f8c8d;
-                border-radius: 5px;
-                padding: 8px 16px;
-                text-align: center;
-                text-decoration: none;
-                display: inline-block;
-                cursor: pointer;
-                transition: background-color 0.3s ease, color 0.3s ease;
-            }
-            QPushButton:hover {
-                background-color: #bdc3c7; /* Svetlejšie šedé pri najetí */
-                color: #2c3e50;
-            }
-            QPushButton:pressed {
-                background-color: #95a5a6; /* Ešte svetlejšie šedé pri stlačení */
-                color: #2c3e50;
-            }
-            QLineEdit {
-                background-color: #ffffff;
-                color: #2c3e50;
-                border: 1px solid #7f8c8d;
-                border-radius: 5px;
-                padding: 8px;
-                margin: 5px;
-            }
-            QLineEdit:focus {
-                border-color: #3498db;
-                box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
-                outline: none;
-            }
-            QFrame {
-                border: 1px solid #7f8c8d;
-                border-radius: 10px;
-                margin: 10px;
-                padding: 10px;
-                background-color: #ecf0f1;
-            }
-            QScrollArea {
-                background-color: #ecf0f1;
-                border: none;
-            }
-            QScrollBar:vertical {
-                border: none;
-                background: #ecf0f1;
-                width: 10px;
-                margin: 20px 0 20px 0;
-            }
-            QScrollBar::handle:vertical {
-                background: #7f8c8d;
-                min-height: 20px;
-                border-radius: 5px;
-            }
-            QScrollBar::add-line:vertical {
-                border: none;
-                background: none;
-                height: 20px;
-                subcontrol-position: top;
-                subcontrol-origin: margin;
-            }
-            QScrollBar::sub-line:vertical {
-                border: none;
-                background: none;
-                height: 20px;
-                subcontrol-position: bottom;
-                subcontrol-origin: margin;
-            }
-            QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {
-                background: none;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background: none;
-            }
+        # Hlavné rozloženie aplikácie
+        main_layout = QVBoxLayout()
 
-        """)
-
-        grid_layout = QGridLayout()
-        self.main_layout.addLayout(grid_layout)
+        # Rozloženie pre ATACAMA a WAKE-ON-LAN sekcie
+        top_layout = QHBoxLayout()
 
         # ATACAMA sekcia
         atacama_frame = QFrame()
         atacama_layout = QVBoxLayout()
-
         atacama_label = QLabel("ATACAMA")
         atacama_label.setFont(QFont("Arial", 14, QFont.Bold))
         atacama_label.setAlignment(Qt.AlignCenter)
@@ -303,63 +215,14 @@ class MainWindow(QMainWindow):
         zasuvky_layout = QGridLayout()
         zasuvky_label = QLabel("Zásuvky")
         zasuvky_label.setFont(QFont("Arial", 12, QFont.Bold))
-        zasuvky_layout.addWidget(zasuvky_label, 0, 0, 1, len(ZASUVKY))
+        zasuvky_layout.addWidget(zasuvky_label, 0, 0, 1, 4)  # Rozšírenie cez 4 stĺpce
 
         self.led_labels = {}
         for i, (name, cislo) in enumerate(ZASUVKY.items()):
             label = QLabel(name)
             label.setAlignment(Qt.AlignCenter)
             zapnut_button = QPushButton("Zapnúť")
-            zapnut_button.setStyleSheet("""
-                QPushButton {
-                    background-color: #4CAF50; /* Green */
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    padding: 10px 20px;
-                    text-align: center;
-                    text-decoration: none;
-                    display: inline-block;
-                    font-size: 14px;
-                    margin: 4px 8px;
-                    cursor: pointer;
-                    transition-duration: 0.4s;
-                }
-
-                QPushButton:hover {
-                    background-color: #45a049;
-                }
-
-                QPushButton:active {
-                  background-color: #367c39;
-                }
-                """)
             vypnut_button = QPushButton("Vypnúť")
-            vypnut_button.setStyleSheet("""
-                QPushButton {
-                    background-color: #f44336; /* Red */
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    padding: 10px 20px;
-                    text-align: center;
-                    text-decoration: none;
-                    display: inline-block;
-                    font-size: 14px;
-                    margin: 4px 8px;
-                    cursor: pointer;
-                    transition-duration: 0.4s;
-                }
-
-                QPushButton:hover {
-                    background-color: #d32f2f;
-                }
-
-                QPushButton:active {
-                  background-color: #c62828;
-                }
-                """)
-
             led_label = QLabel()
             led_label.setPixmap(QPixmap(LED_DEF_PATH))
             led_label.setFixedSize(20, 20)
@@ -371,60 +234,13 @@ class MainWindow(QMainWindow):
             zasuvky_layout.addWidget(label, i + 1, 0)
             zasuvky_layout.addWidget(zapnut_button, i + 1, 1)
             zasuvky_layout.addWidget(vypnut_button, i + 1, 2)
-            zasuvky_layout.addWidget(led_label, i+1, 3)
+            zasuvky_layout.addWidget(led_label, i + 1, 3)  # Pridanie LEDky do layoutu
+
         zasuvky_frame.setLayout(zasuvky_layout)
         atacama_layout.addWidget(zasuvky_frame)
 
         indistarter_c14_button = QPushButton("Spustiť INDISTARTER C14")
-        indistarter_c14_button.setStyleSheet("""
-            QPushButton {
-                background-color: #008CBA; /* Blue */
-                color: white;
-                border: none;
-                border-radius: 5px;
-                padding: 10px 20px;
-                text-align: center;
-                text-decoration: none;
-                display: inline-block;
-                font-size: 14px;
-                margin: 4px 8px;
-                cursor: pointer;
-                transition-duration: 0.4s;
-              }
-
-              QPushButton:hover {
-                background-color: #007ba7;
-              }
-
-              QPushButton:active {
-                background-color: #00668e;
-              }
-            """);
         indistarter_az2000_button = QPushButton("Spustiť INDISTARTER AZ2000")
-        indistarter_az2000_button.setStyleSheet("""
-            QPushButton {
-                background-color: #008CBA; /* Blue */
-                color: white;
-                border: none;
-                border-radius: 5px;
-                padding: 10px 20px;
-                text-align: center;
-                text-decoration: none;
-                display: inline-block;
-                font-size: 14px;
-                margin: 4px 8px;
-                cursor: pointer;
-                transition-duration: 0.4s;
-              }
-
-              QPushButton:hover {
-                background-color: #007ba7;
-              }
-
-              QPushButton:active {
-                background-color: #00668e;
-              }
-            """);
         indistarter_c14_button.clicked.connect(spusti_indistarter_c14)
         indistarter_az2000_button.clicked.connect(spusti_indistarter_az2000)
         atacama_layout.addWidget(indistarter_c14_button)
@@ -437,55 +253,7 @@ class MainWindow(QMainWindow):
         strecha_layout.addWidget(strecha_label)
         strecha_layout.setAlignment(Qt.AlignCenter)
         sever_button = QPushButton("Sever")
-        sever_button.setStyleSheet("""
-            QPushButton {
-                background-color: #FF851B; /* Orange */
-                color: white;
-                border: none;
-                border-radius: 5px;
-                padding: 10px 20px;
-                text-align: center;
-                text-decoration: none;
-                display: inline-block;
-                font-size: 14px;
-                margin: 4px 8px;
-                cursor: pointer;
-                transition-duration: 0.4s;
-              }
-
-              QPushButton:hover {
-                background-color: #d86e00;
-              }
-
-              QPushButton:active {
-                background-color: #b85e00;
-              }
-            """);
         juh_button = QPushButton("Juh")
-        juh_button.setStyleSheet("""
-            QPushButton {
-                background-color: #FF851B; /* Orange */
-                color: white;
-                border: none;
-                border-radius: 5px;
-                padding: 10px 20px;
-                text-align: center;
-                text-decoration: none;
-                display: inline-block;
-                font-size: 14px;
-                margin: 4px 8px;
-                cursor: pointer;
-                transition-duration: 0.4s;
-              }
-
-              QPushButton:hover {
-                background-color: #d86e00;
-              }
-
-              QPushButton:active {
-                background-color: #b85e00;
-              }
-            """);
         sever_button.clicked.connect(lambda: ovladaj_strechu("sever"))
         juh_button.clicked.connect(lambda: ovladaj_strechu("juh"))
         strecha_layout.addWidget(sever_button)
@@ -494,7 +262,7 @@ class MainWindow(QMainWindow):
         atacama_layout.addWidget(strecha_frame)
 
         atacama_frame.setLayout(atacama_layout)
-        grid_layout.addWidget(atacama_frame, 0, 0)
+        top_layout.addWidget(atacama_frame)
 
         # WAKE-ON-LAN sekcia
         wake_frame = QFrame()
@@ -504,15 +272,18 @@ class MainWindow(QMainWindow):
         wake_label.setAlignment(Qt.AlignCenter)
         wake_layout.addWidget(wake_label)
         az2000_button = QPushButton("Zapni AZ2000")
-        az2000_button.setStyleSheet("background-color: #e0e0e0; color: #2c3e50;");
         gm3000_button = QPushButton("Zapni GM3000")
-        gm3000_button.setStyleSheet("background-color: #e0e0e0; color: #2c3e50;");
         az2000_button.clicked.connect(lambda: wake_on_lan("00:c0:08:a9:c2:32"))
         gm3000_button.clicked.connect(lambda: wake_on_lan(GM3000_MAC))
         wake_layout.addWidget(az2000_button)
         wake_layout.addWidget(gm3000_button)
         wake_frame.setLayout(wake_layout)
-        grid_layout.addWidget(wake_frame, 0, 1)
+        top_layout.addWidget(wake_frame)
+
+        main_layout.addLayout(top_layout)
+
+        # OTA Aktualizácie a Konfig sekcie
+        bottom_layout = QHBoxLayout()
 
         # OTA Aktualizácie sekcia
         ota_frame = QFrame()
@@ -522,85 +293,61 @@ class MainWindow(QMainWindow):
         ota_label.setAlignment(Qt.AlignCenter)
         ota_layout.addWidget(ota_label)
         aktualizovat_button = QPushButton("Aktualizovať program")
-        aktualizovat_button.setStyleSheet("background-color: #e0e0e0; color: #2c3e50;");
         aktualizovat_button.clicked.connect(aktualizuj_program)
         ota_layout.addWidget(aktualizovat_button)
 
-        kamera_atacama_label = QLabel('<a href="http://172.20.20.134">Kamera Atacama</a>')
+        kamera_atacama_label = QLabel('<a href="http://172.20.20.121">Kamera ATACAMA</a>')
         kamera_atacama_label.setOpenExternalLinks(True)
-        kamera_atacama_label.setCursor(Qt.PointingHandCursor)
-        kamera_atacama_label.setAlignment(Qt.AlignCenter)
         ota_layout.addWidget(kamera_atacama_label)
 
-        kamera_astrofoto_label = QLabel('<a href="http://172.20.20.131">Kamera Astrofoto</a>')
-        kamera_astrofoto_label.setOpenExternalLinks(True)
-        kamera_astrofoto_label.setCursor(Qt.PointingHandCursor)
-        kamera_astrofoto_label.setAlignment(Qt.AlignCenter)
-        ota_layout.addWidget(kamera_astrofoto_label)
-
         ota_frame.setLayout(ota_layout)
-        grid_layout.addWidget(ota_frame, 1, 0, 1, 2) # Spojenie dvoch stĺpcov pre OTA
+        bottom_layout.addWidget(ota_frame)
 
         # Konfig sekcia
-        config_frame = QFrame()
-        config_layout = QGridLayout()
-        config_label = QLabel("Konfigurácia AZ2000")
-        config_label.setFont(QFont("Arial", 14, QFont.Bold))
-        config_label.setAlignment(Qt.AlignCenter)
-        config_layout.addWidget(config_label, 0, 0, 1, 3)
+        konfig_frame = QFrame()
+        konfig_layout = QGridLayout()
+        konfig_label = QLabel("Konfigurácia")
+        konfig_label.setFont(QFont("Arial", 14, QFont.Bold))
+        konfig_label.setAlignment(Qt.AlignCenter)
+        konfig_layout.addWidget(konfig_label, 0, 0, 1, 2)
 
-        ip_label = QLabel("IP adresa:")
-        ip_label.setAlignment(Qt.AlignLeft)
-        self.ip_input = QLineEdit(AZ2000_IP)
-        user_label = QLabel("SSH používateľ:")
-        user_label.setAlignment(Qt.AlignLeft)
-        self.user_input = QLineEdit(SSH_USER2)
-        password_label = QLabel("SSH heslo:")
-        password_label.setAlignment(Qt.AlignLeft)
-        self.password_input = QLineEdit(SSH_PASS2)
-        self.password_input.setEchoMode(QLineEdit.Password)
-        save_button = QPushButton("Uložiť nastavenia")
-        save_button.setStyleSheet("background-color: #e0e0e0; color: #2c3e50;");
-        save_button.clicked.connect(self.on_save_config)
+        ip_label = QLabel("IP AZ2000:")
+        self.ip_edit = QLineEdit(AZ2000_IP)
+        user_label = QLabel("SSH User:")
+        self.user_edit = QLineEdit(SSH_USER2)
+        password_label = QLabel("SSH Pass:")
+        self.password_edit = QLineEdit(SSH_PASS2)
+        ulozit_button = QPushButton("Uložiť")
+        ulozit_button.clicked.connect(self.ulozit_konfiguraciu)
 
-        config_layout.addWidget(ip_label, 1, 0)
-        config_layout.addWidget(self.ip_input, 2, 0)
-        config_layout.addWidget(user_label, 1, 1)
-        config_layout.addWidget(self.user_input, 2, 1)
-        config_layout.addWidget(password_label, 1, 2)
-        config_layout.addWidget(self.password_input, 2, 2)
-        config_layout.addWidget(save_button, 1, 3, 2, 1)
-        config_frame.setLayout(config_layout)
-        grid_layout.addWidget(config_frame, 1, 2, 1, 2) # Spojenie dvoch stĺpcov pre Konfig
+        konfig_layout.addWidget(ip_label, 1, 0)
+        konfig_layout.addWidget(self.ip_edit, 1, 1)
+        konfig_layout.addWidget(user_label, 2, 0)
+        konfig_layout.addWidget(self.user_edit, 2, 1)
+        konfig_layout.addWidget(password_label, 3, 0)
+        konfig_layout.addWidget(self.password_edit, 3, 1)
+        konfig_layout.addWidget(ulozit_button, 4, 0, 1, 2)
 
-        # Pridanie stretch faktorov pre lepšie rozloženie
-        grid_layout.setColumnStretch(0, 1)
-        grid_layout.setColumnStretch(1, 1)
-        grid_layout.setColumnStretch(2, 1)
-        grid_layout.setColumnStretch(3, 1)
-        grid_layout.setRowStretch(0, 1)
-        grid_layout.setRowStretch(1, 1)
+        konfig_frame.setLayout(konfig_layout)
+        bottom_layout.addWidget(konfig_frame)
 
-    def on_save_config(self):
-        """
-        Uloží konfiguráciu AZ2000 (IP adresa, používateľské meno, heslo) do konfiguračného súboru.
-        Zobrazí informačné alebo chybové okno v závislosti od výsledku uloženia.
-        Aktualizuje globálne premenné s novými hodnotami.
-        """
-        global AZ2000_IP, SSH_USER2, SSH_PASS2
-        ip = self.ip_input.text()
-        user = self.user_input.text()
-        password = self.password_input.text()
+        main_layout.addLayout(bottom_layout)
+
+        self.setLayout(main_layout)
+
+    def ulozit_konfiguraciu(self):
+        """Uloží konfiguráciu zadanú v textových poliach."""
+        ip = self.ip_edit.text()
+        user = self.user_edit.text()
+        password = self.password_edit.text()
         if save_config(ip, user, password):
-            AZ2000_IP = ip
-            SSH_USER2 = user
-            SSH_PASS2 = password
-            QMessageBox.information(self, "Úspech", "Konfigurácia AZ2000 bola úspešne uložená.")
+            QMessageBox.information(self, "Úspech", "Konfigurácia bola úspešne uložená.")
+            load_config()  # Načíta novú konfiguráciu
         else:
-            QMessageBox.critical(self, "Chyba", "Chyba pri ukladaní konfigurácie AZ2000.")
+            QMessageBox.critical(self, "Chyba", "Chyba pri ukladaní konfigurácie.")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    main_window = MainWindow()
-    main_window.show()
+    hlavne_okno = MainWindow()
+    hlavne_okno.show()
     sys.exit(app.exec_())
