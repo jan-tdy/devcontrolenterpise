@@ -11,8 +11,8 @@ ZASUVKY = {
     "C14": 3,
     "RC16": 2
 }
-PROGRAM_GITHUB = "github.com/jan-tdy/devcontrolenterpise-ordervtdy01dpv-atacama/main.py"
-PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/main.py"
+PROGRAM_GITHUB = "github.com/jan-tdy/devcontrolenterpise/C14/C14.py"
+PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
 SSH_USER = "dpv"  # Používateľ pre SSH
 SSH_PASS = "otj0711" # Heslo pre SSH (Pozor: Pre produkčné prostredie použiť SSH kľúče!)
 CENTRAL2_IP = "172.20.20.133" #IP adresa Central2
@@ -144,11 +144,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def ovladaj_strechu(self, strana):
         """Ovláda strechu (sever/juh) pomocou príkazu `crelay`."""
         if strana == "sever":
-            prikaz1 = "crelay -s BI TFT 2 ON"
-            prikaz2 = "crelay -s BI TFT 2 OFF"
+            prikaz1 = "crelay -s BITFT 2 ON"
+            prikaz2 = "crelay -s BITFT 2 OFF"
         elif strana == "juh":
-            prikaz1 = "crelay -s BI TFT 1 ON"
-            prikaz2 = "crelay -s BI TFT 1 OFF"
+            prikaz1 = "crelay -s BITFT 1 ON"
+            prikaz2 = "crelay -s BITFT 1 OFF"
         else:
             print("Neplatná strana strechy.")
             return
