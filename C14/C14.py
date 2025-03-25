@@ -2,20 +2,22 @@ import sys
 import subprocess
 import time
 import gi
-gi.require_version('Gtk', '3.0')
+
+gi.require_version("Gtk", "4.0")  # Používame GTK 4
 from gi.repository import Gtk, GLib
 
 # Konštanty
 ZASUVKY = {
     "NOUT": 4,
     "C14": 3,
-    "RC16": 2
+    "RC16": 2,
 }
 PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
 # Premenné pre konfiguráciu AZ2000 (predvolené hodnoty)
 AZ2000_IP = "172.20.20.116"
 SSH_USER2 = "pi2"
 SSH_PASS2 = "otj0711"
+
 
 def load_config():
     """Načíta konfiguráciu AZ2000 z konfiguračného súboru."""
@@ -32,6 +34,8 @@ def load_config():
     except Exception as e:
         print(f"Chyba pri načítaní konfigurácie: {e}")
 
+
+
 def save_config(ip, user, password):
     """Uloží konfiguráciu AZ2000 do konfiguračného súboru."""
     try:
@@ -45,6 +49,8 @@ def save_config(ip, user, password):
         print(f"Chyba pri ukladaní konfigurácie: {e}")
         return False
 
+
+
 def ovladaj_zasuvku(cislo_zasuvky, zapnut, label_name):
     """Ovláda zadanú zásuvku pomocou príkazu `sispmctl`."""
     prikaz = f"sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"
@@ -56,6 +62,8 @@ def ovladaj_zasuvku(cislo_zasuvky, zapnut, label_name):
         print(f"Chyba pri ovládaní zásuvky {cislo_zasuvky}: {e}")
         GLib.idle_add(set_led_status, label_name, "def")
 
+
+
 def spusti_indistarter_c14():
     """Spustí príkaz `indistarter` na C14."""
     try:
@@ -64,6 +72,8 @@ def spusti_indistarter_c14():
         print(f"INDISTARTER na C14: {c14_vystup.decode()}")
     except subprocess.CalledProcessError as e:
         print(f"Chyba pri spúšťaní INDISTARTERA na C14: {e}")
+
+
 
 def spusti_indistarter_az2000():
     """Spustí príkaz `indistarter` na UVEX-RPi (AZ2000) cez SSH."""
@@ -74,6 +84,8 @@ def spusti_indistarter_az2000():
         print(f"INDISTARTER na UVEX-RPi (AZ2000) spustený.")
     except subprocess.CalledProcessError as e:
         print(f"Chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
+
+
 
 def ovladaj_strechu(strana):
     """Ovláda strechu (sever/juh) pomocou príkazu `crelay`."""
@@ -95,6 +107,8 @@ def ovladaj_strechu(strana):
     except subprocess.CalledProcessError as e:
         print(f"Chyba pri ovládaní strechy ({strana}): {e}")
 
+
+
 def wake_on_lan(mac_adresa):
     """Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN."""
     print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
@@ -102,6 +116,8 @@ def wake_on_lan(mac_adresa):
         send_magic_packet(mac_adresa)
     except Exception as e:
         print(f"Chyba pri odosielaní magic packetu: {e}")
+
+
 
 def aktualizuj_program():
     """Aktualizuje program z GitHub repozitára."""
@@ -123,57 +139,57 @@ def aktualizuj_program():
     except Exception as e:
         print(f"Neočakávaná chyba: {e}")
 
+
+
 def set_led_status(label_name, farba):
-    """Nastaví farbu LEDky v GUI."""
-    if farba == "green":
-        led_pixbuf = Gtk.Image.new_from_file("led_green.png").get_pixbuf()
-    elif farba == "red":
-        led_pixbuf = Gtk.Image.new_from_file("led_red.png").get_pixbuf()
-    else:
-        led_pixbuf = Gtk.Image.new_from_file("led_def.png").get_pixbuf()
+    """Nastaví farbu LEDky v GUI pomocou CSS štýlov."""
     label = status_labels[label_name]
-    if led_pixbuf:
-        label.set_from_pixbuf(led_pixbuf.scale_simple(24, 24, Gtk.InterpType.BILINEAR)) # масштабування
+    if farba == "green":
+        label.set_markup('<span foreground="green">●</span>')
+    elif farba == "red":
+        label.set_markup('<span foreground="red">●</span>')
     else:
-        print(f"Chyba: Nepodarilo sa načítať pixbuf pre farbu {farba}")
+        label.set_markup('<span foreground="gray">●</span>')  # Alebo inú predvolenú farbu
+
+
 
 class MainWindow(Gtk.Window):
     def __init__(self):
-        super().__init__(title="Ovládanie Hvezdárne - C14 - GTK verzia")
+        super().__init__(title="Ovládanie Hvezdárne - C14 - GTK 4 verzia")  # Title pre GTK 4
         self.set_default_size(800, 600)
         self.set_border_width(10)
 
-        load_config() # Nacitanie konfiguracie
+        load_config()  # Nacitanie konfiguracie
 
         grid = Gtk.Grid()
         grid.set_column_spacing(10)
         grid.set_row_spacing(10)
-        self.add(grid)
+        self.set_child(grid)  # set_child pre GTK 4
 
         # ATACAMA sekcia
-        atacama_frame = Gtk.Frame(label="ATACAMA")
+        atacama_frame = Gtk.Frame(label_text="ATACAMA")  # label_text pre GTK 4
         atacama_grid = Gtk.Grid()
         atacama_grid.set_column_spacing(5)
         atacama_grid.set_row_spacing(5)
-        atacama_frame.add(atacama_grid)
+        atacama_frame.set_child(atacama_grid)  # set_child pre GTK 4
         grid.attach(atacama_frame, 0, 0, 1, 1)
 
         # Zásuvky
-        zasuvky_frame = Gtk.Frame(label="Zásuvky")
+        zasuvky_frame = Gtk.Frame(label_text="Zásuvky")  # label_text pre GTK 4
         zasuvky_grid = Gtk.Grid()
         zasuvky_grid.set_column_spacing(5)
         zasuvky_grid.set_row_spacing(5)
-        zasuvky_frame.add(zasuvky_grid)
+        zasuvky_frame.set_child(zasuvky_grid)  # set_child pre GTK 4
         atacama_grid.attach(zasuvky_frame, 0, 0, 1, 1)
 
         global status_labels
         status_labels = {}
         for i, (name, cislo) in enumerate(ZASUVKY.items()):
-            label = Gtk.Label(name)
+            label = Gtk.Label(label=name)  # label pre GTK 4
             zapnut_button = Gtk.Button(label="Zapnúť")
             vypnut_button = Gtk.Button(label="Vypnúť")
-            status_labels[name] = Gtk.Image()
-            set_led_status(name, "def") # Nastavíme defaultný stav LEDky
+            status_labels[name] = Gtk.Label()  # Používame Gtk.Label pre status
+            set_led_status(name, "def")
             zapnut_button.connect("clicked", lambda button, n=cislo, l=name: ovladaj_zasuvku(n, True, l))
             vypnut_button.connect("clicked", lambda button, n=cislo, l=name: ovladaj_zasuvku(n, False, l))
             zasuvky_grid.attach(label, i, 0, 1, 1)
@@ -190,11 +206,11 @@ class MainWindow(Gtk.Window):
         atacama_grid.attach(indistarter_az2000_button, 2, 0, 1, 3)
 
         # Strecha
-        strecha_frame = Gtk.Frame(label="Strecha")
+        strecha_frame = Gtk.Frame(label_text="Strecha")  # label_text pre GTK 4
         strecha_grid = Gtk.Grid()
         strecha_grid.set_column_spacing(5)
         strecha_grid.set_row_spacing(5)
-        strecha_frame.add(strecha_grid)
+        strecha_frame.set_child(strecha_grid)  # set_child pre GTK 4
         atacama_grid.attach(strecha_frame, 3, 0, 1, 3)
         sever_button = Gtk.Button(label="Sever")
         juh_button = Gtk.Button(label="Juh")
@@ -204,11 +220,11 @@ class MainWindow(Gtk.Window):
         strecha_grid.attach(juh_button, 0, 1, 1, 1)
 
         # WAKE-ON-LAN sekcia
-        wake_frame = Gtk.Frame(label="WAKE-ON-LAN")
+        wake_frame = Gtk.Frame(label_text="WAKE-ON-LAN")  # label_text pre GTK 4
         wake_grid = Gtk.Grid()
         wake_grid.set_column_spacing(5)
         wake_grid.set_row_spacing(5)
-        wake_frame.add(wake_grid)
+        wake_frame.set_child(wake_grid)  # set_child pre GTK 4
         grid.attach(wake_frame, 1, 0, 1, 1)
 
         az2000_button = Gtk.Button(label="Zapni AZ2000")
@@ -219,11 +235,11 @@ class MainWindow(Gtk.Window):
         wake_grid.attach(gm3000_button, 0, 1, 1, 1)
 
         # OTA Aktualizácie sekcia
-        ota_frame = Gtk.Frame(label="OTA Aktualizácie")
+        ota_frame = Gtk.Frame(label_text="OTA Aktualizácie")  # label_text pre GTK 4
         ota_grid = Gtk.Grid()
         ota_grid.set_column_spacing(5)
         ota_grid.set_row_spacing(5)
-        ota_frame.add(ota_grid)
+        ota_frame.set_child(ota_grid)  # set_child pre GTK 4
         grid.attach(ota_frame, 2, 0, 1, 1)
 
         aktualizovat_button = Gtk.Button(label="Aktualizovať program")
@@ -241,26 +257,26 @@ class MainWindow(Gtk.Window):
         ota_grid.attach(kamera_astrofoto_label, 2, 0, 1, 1)
 
         # Konfig sekcia
-        config_frame = Gtk.Frame(label="Konfigurácia AZ2000")
+        config_frame = Gtk.Frame(label_text="Konfigurácia AZ2000")  # label_text pre GTK 4
         config_grid = Gtk.Grid()
         config_grid.set_column_spacing(5)
         config_grid.set_row_spacing(5)
-        config_frame.add(config_grid)
+        config_frame.set_child(config_grid)  # set_child pre GTK 4
         grid.attach(config_frame, 3, 0, 1, 1)
 
-        ip_label = Gtk.Label("IP adresa:")
+        ip_label = Gtk.Label(label="IP adresa:")  # label pre GTK 4
         self.ip_input = Gtk.Entry()
         self.ip_input.set_text(AZ2000_IP)
         config_grid.attach(ip_label, 0, 0, 1, 1)
         config_grid.attach(self.ip_input, 0, 1, 1, 1)
 
-        user_label = Gtk.Label("SSH používateľ:")
+        user_label = Gtk.Label(label="SSH používateľ:")  # label pre GTK 4
         self.user_input = Gtk.Entry()
         self.user_input.set_text(SSH_USER2)
         config_grid.attach(user_label, 1, 0, 1, 1)
         config_grid.attach(self.user_input, 1, 1, 1, 1)
 
-        password_label = Gtk.Label("SSH heslo:")
+        password_label = Gtk.Label(label="SSH heslo:")  # label pre GTK 4
         self.password_input = Gtk.Entry()
         self.password_input.set_visibility(False)
         self.password_input.set_text(SSH_PASS2)
@@ -271,7 +287,7 @@ class MainWindow(Gtk.Window):
         save_button.connect("clicked", self.save_config)
         config_grid.attach(save_button, 3, 0, 1, 2)
 
-        self.show_all()
+        self.show()  # show pre GTK 4
 
     def save_config(self, button):
         """Uloží konfiguráciu AZ2000 do konfiguračného súboru."""
@@ -280,26 +296,33 @@ class MainWindow(Gtk.Window):
         user = self.user_input.get_text()
         password = self.password_input.get_text()
         if save_config(ip, user, password):
-            dialog = Gtk.MessageDialog(parent=self,
-                                         message_type=Gtk.MessageType.INFO,
-                                         buttons=Gtk.ButtonsType.OK,
-                                         text="Konfigurácia AZ2000 bola uložená.")
+            dialog = Gtk.MessageDialog(
+                parent=self,  # parent pre GTK 4
+                flags=Gtk.DialogFlags.MODAL,  # Použitie Gtk.DialogFlags
+                message_type=Gtk.MessageType.INFO,
+                buttons=Gtk.ButtonsType.OK,
+                text="Konfigurácia AZ2000 bola uložená.",
+            )
             dialog.run()
             dialog.destroy()
             AZ2000_IP = ip
             SSH_USER2 = user
             SSH_PASS2 = password
         else:
-            dialog = Gtk.MessageDialog(parent=self,
-                                         message_type=Gtk.MessageType.ERROR,
-                                         buttons=Gtk.ButtonsType.OK,
-                                         text="Chyba pri ukladaní konfigurácie.")
+            dialog = Gtk.MessageDialog(
+                parent=self,  # parent pre GTK 4
+                flags=Gtk.DialogFlags.MODAL,  # Použitie Gtk.DialogFlags
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text="Chyba pri ukladaní konfigurácie.",
+            )
             dialog.run()
             dialog.destroy()
 
+
+
 if __name__ == "__main__":
-    load_config() # Nacitanie konfiguracie pri spusteni
+    load_config()
     app = Gtk.Application(application_id="com.example.C14Control")
     app.connect("activate", lambda app: MainWindow())
-    app.run(None)
-
+    app.run()  # app.run() pre GTK 4
