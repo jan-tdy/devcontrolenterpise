@@ -4,6 +4,7 @@ import time
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
+from wakeonlan import send_magic_packet
 
 # Konštanty
 ZASUVKY = {
@@ -166,7 +167,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # Implementácia Wake-on-LAN (mimo rozsahu tohto príkladu, vyžaduje knižnicu ako wakeonlan)
         print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
         try:
-            from wakeonlan import send_magic_packet
             send_magic_packet(mac_adresa)
         except Exception as e:
             print(f"Chyba pri odosielaní magic packetu: {e}")
@@ -180,7 +180,7 @@ class MainWindow(QtWidgets.QMainWindow):
             subprocess.run(prikaz_stiahnutie, shell=True, check=True)
 
             # 2. Nahradenie existujúceho súboru
-            prikaz_nahradenie = f"cp main.py {PROGRAM_CESTA}"
+            prikaz_nahradenie = f"cp C14.py {PROGRAM_CESTA}"
             subprocess.run(prikaz_nahradenie, shell=True, check=True)
 
             # 3. Reštart aplikácie (ak je to potrebné)
