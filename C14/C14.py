@@ -4,7 +4,6 @@ import time
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
-from wakeonlan import send_magic_packet
 
 # Konštanty
 ZASUVKY = {
@@ -127,13 +126,13 @@ def aktualizuj_program():
 def set_led_status(label_name, farba):
     """Nastaví farbu LEDky v GUI."""
     if farba == "green":
-        led_pixmap = Gtk.gdk.pixbuf_new_from_file("led_green.png")
+        led_pixmap = Gtk.Image.new_from_file("led_green.png")
     elif farba == "red":
-        led_pixmap = Gtk.gdk.pixbuf_new_from_file("led_red.png")
+        led_pixmap = Gtk.Image.new_from_file("led_red.png")
     else:
-        led_pixmap = Gtk.gdk.pixbuf_new_from_file("led_def.png")
+        led_pixmap = Gtk.Image.new_from_file("led_def.png")
     label = status_labels[label_name]
-    label.set_from_pixbuf(led_pixmap.scale_simple(24, 24, 1))
+    label.set_from_pixbuf(led_pixmap.get_pixbuf().scale_simple(24, 24, Gtk.InterpType.BILINEAR)) # масштабування
 
 class MainWindow(Gtk.Window):
     def __init__(self):
@@ -300,3 +299,4 @@ if __name__ == "__main__":
     app = Gtk.Application(application_id="com.example.C14Control")
     app.connect("activate", lambda app: MainWindow())
     app.run(None)
+
