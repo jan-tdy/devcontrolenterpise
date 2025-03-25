@@ -7,7 +7,7 @@ import os
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QGridLayout, QLabel, QPushButton,
                              QLineEdit, QMessageBox, QFrame, QSizePolicy, QScrollArea,
-                             QSpacerItem)
+                             QSpacerItem, QTabWidget)
 from PyQt5.QtGui import QFont, QCursor, QPixmap, QColor
 from PyQt5.QtCore import Qt, QTimer
 
@@ -197,15 +197,25 @@ class MainWindow(QMainWindow):
         self.main_widget.setLayout(self.main_layout)
         load_config()
 
-        # Hlavné rozloženie aplikácie
-        main_layout = QVBoxLayout()
+        # Používame QTabWidget pre hlavné rozdelenie okna
+        self.tabs = QTabWidget()
+        self.main_layout.addWidget(self.tabs)
 
-        # Rozloženie pre ATACAMA a WAKE-ON-LAN sekcie
-        top_layout = QHBoxLayout()
+        # Vytvoríme widget pre každú záložku
+        self.atacama_tab = QWidget()
+        self.wake_tab = QWidget()
+        self.konfig_tab = QWidget()
+
+        # Pridáme záložky do QTabWidget
+        self.tabs.addTab(self.atacama_tab, "ATACAMA")
+        self.tabs.addTab(self.wake_tab, "WAKE-ON-LAN")
+        self.tabs.addTab(self.konfig_tab, "Konfigurácia")
+
+        # Rozloženie pre ATACAMA záložku
+        atacama_layout = QVBoxLayout()
+        self.atacama_tab.setLayout(atacama_layout)
 
         # ATACAMA sekcia
-        atacama_frame = QFrame()
-        atacama_layout = QVBoxLayout()
         atacama_label = QLabel("ATACAMA")
         atacama_label.setFont(QFont("Arial", 14, QFont.Bold))
         atacama_label.setAlignment(Qt.AlignCenter)
@@ -215,7 +225,7 @@ class MainWindow(QMainWindow):
         zasuvky_layout = QGridLayout()
         zasuvky_label = QLabel("Zásuvky")
         zasuvky_label.setFont(QFont("Arial", 12, QFont.Bold))
-        zasuvky_layout.addWidget(zasuvky_label, 0, 0, 1, 4)  # Rozšírenie cez 4 stĺpce
+        zasuvky_layout.addWidget(zasuvky_label, 0, 0, 1, 4)
 
         self.led_labels = {}
         for i, (name, cislo) in enumerate(ZASUVKY.items()):
@@ -234,7 +244,7 @@ class MainWindow(QMainWindow):
             zasuvky_layout.addWidget(label, i + 1, 0)
             zasuvky_layout.addWidget(zapnut_button, i + 1, 1)
             zasuvky_layout.addWidget(vypnut_button, i + 1, 2)
-            zasuvky_layout.addWidget(led_label, i + 1, 3)  # Pridanie LEDky do layoutu
+            zasuvky_layout.addWidget(led_label, i + 1, 3)
 
         zasuvky_frame.setLayout(zasuvky_layout)
         atacama_layout.addWidget(zasuvky_frame)
@@ -261,12 +271,11 @@ class MainWindow(QMainWindow):
         strecha_frame.setLayout(strecha_layout)
         atacama_layout.addWidget(strecha_frame)
 
-        atacama_frame.setLayout(atacama_layout)
-        top_layout.addWidget(atacama_frame)
+        # Rozloženie pre WAKE-ON-LAN záložku
+        wake_layout = QVBoxLayout()
+        self.wake_tab.setLayout(wake_layout)
 
         # WAKE-ON-LAN sekcia
-        wake_frame = QFrame()
-        wake_layout = QVBoxLayout()
         wake_label = QLabel("WAKE-ON-LAN")
         wake_label.setFont(QFont("Arial", 14, QFont.Bold))
         wake_label.setAlignment(Qt.AlignCenter)
@@ -277,13 +286,10 @@ class MainWindow(QMainWindow):
         gm3000_button.clicked.connect(lambda: wake_on_lan(GM3000_MAC))
         wake_layout.addWidget(az2000_button)
         wake_layout.addWidget(gm3000_button)
-        wake_frame.setLayout(wake_layout)
-        top_layout.addWidget(wake_frame)
 
-        main_layout.addLayout(top_layout)
-
-        # OTA Aktualizácie a Konfig sekcie
-        bottom_layout = QHBoxLayout()
+        # Rozloženie pre Konfig záložku
+        konfig_layout = QVBoxLayout()
+        self.konfig_tab.setLayout(konfig_layout)
 
         # OTA Aktualizácie sekcia
         ota_frame = QFrame()
@@ -300,16 +306,15 @@ class MainWindow(QMainWindow):
         kamera_atacama_label.setOpenExternalLinks(True)
         ota_layout.addWidget(kamera_atacama_label)
 
-        ota_frame.setLayout(ota_layout)
-        bottom_layout.addWidget(ota_frame)
+        konfig_layout.addWidget(ota_frame)
 
         # Konfig sekcia
         konfig_frame = QFrame()
-        konfig_layout = QGridLayout()
+        konfig_layout_grid = QGridLayout()
         konfig_label = QLabel("Konfigurácia")
         konfig_label.setFont(QFont("Arial", 14, QFont.Bold))
         konfig_label.setAlignment(Qt.AlignCenter)
-        konfig_layout.addWidget(konfig_label, 0, 0, 1, 2)
+        konfig_layout_grid.addWidget(konfig_label, 0, 0, 1, 2)
 
         ip_label = QLabel("IP AZ2000:")
         self.ip_edit = QLineEdit(AZ2000_IP)
@@ -320,20 +325,18 @@ class MainWindow(QMainWindow):
         ulozit_button = QPushButton("Uložiť")
         ulozit_button.clicked.connect(self.ulozit_konfiguraciu)
 
-        konfig_layout.addWidget(ip_label, 1, 0)
-        konfig_layout.addWidget(self.ip_edit, 1, 1)
-        konfig_layout.addWidget(user_label, 2, 0)
-        konfig_layout.addWidget(self.user_edit, 2, 1)
-        konfig_layout.addWidget(password_label, 3, 0)
-        konfig_layout.addWidget(self.password_edit, 3, 1)
-        konfig_layout.addWidget(ulozit_button, 4, 0, 1, 2)
+        konfig_layout_grid.addWidget(ip_label, 1, 0)
+        konfig_layout_grid.addWidget(self.ip_edit, 1, 1)
+        konfig_layout_grid.addWidget(user_label, 2, 0)
+        konfig_layout_grid.addWidget(self.user_edit, 2, 1)
+        konfig_layout_grid.addWidget(password_label, 3, 0)
+        konfig_layout_grid.addWidget(self.password_edit, 3, 1)
+        konfig_layout_grid.addWidget(ulozit_button, 4, 0, 1, 2)
 
-        konfig_frame.setLayout(konfig_layout)
-        bottom_layout.addWidget(konfig_frame)
+        konfig_frame.setLayout(konfig_layout_grid)
+        konfig_layout.addWidget(konfig_frame)
 
-        main_layout.addLayout(bottom_layout)
-
-        self.setLayout(main_layout)
+        self.setLayout(self.main_layout)
 
     def ulozit_konfiguraciu(self):
         """Uloží konfiguráciu zadanú v textových poliach."""
