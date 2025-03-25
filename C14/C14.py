@@ -126,13 +126,16 @@ def aktualizuj_program():
 def set_led_status(label_name, farba):
     """Nastaví farbu LEDky v GUI."""
     if farba == "green":
-        led_pixmap = Gtk.Image.new_from_file("led_green.png")
+        led_pixbuf = Gtk.Image.new_from_file("led_green.png").get_pixbuf()
     elif farba == "red":
-        led_pixmap = Gtk.Image.new_from_file("led_red.png")
+        led_pixbuf = Gtk.Image.new_from_file("led_red.png").get_pixbuf()
     else:
-        led_pixmap = Gtk.Image.new_from_file("led_def.png")
+        led_pixbuf = Gtk.Image.new_from_file("led_def.png").get_pixbuf()
     label = status_labels[label_name]
-    label.set_from_pixbuf(led_pixmap.get_pixbuf().scale_simple(24, 24, Gtk.InterpType.BILINEAR)) # масштабування
+    if led_pixbuf:
+        label.set_from_pixbuf(led_pixbuf.scale_simple(24, 24, Gtk.InterpType.BILINEAR)) # масштабування
+    else:
+        print(f"Chyba: Nepodarilo sa načítať pixbuf pre farbu {farba}")
 
 class MainWindow(Gtk.Window):
     def __init__(self):
