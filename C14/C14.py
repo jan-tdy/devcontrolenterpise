@@ -6,7 +6,8 @@ import webbrowser
 import os
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QGridLayout, QLabel, QPushButton,
-                             QLineEdit, QMessageBox, QFrame, QSizePolicy, QScrollArea)
+                             QLineEdit, QMessageBox, QFrame, QSizePolicy, QScrollArea,
+                             QSpacerItem)
 from PyQt5.QtGui import QFont, QCursor, QPixmap, QColor
 from PyQt5.QtCore import Qt, QTimer
 
@@ -538,7 +539,7 @@ class MainWindow(QMainWindow):
         ota_layout.addWidget(kamera_astrofoto_label)
 
         ota_frame.setLayout(ota_layout)
-        grid_layout.addWidget(ota_frame, 0, 2)
+        grid_layout.addWidget(ota_frame, 1, 0, 1, 2) # Spojenie dvoch stĺpcov pre OTA
 
         # Konfig sekcia
         config_frame = QFrame()
@@ -570,12 +571,15 @@ class MainWindow(QMainWindow):
         config_layout.addWidget(self.password_input, 2, 2)
         config_layout.addWidget(save_button, 1, 3, 2, 1)
         config_frame.setLayout(config_layout)
-        grid_layout.addWidget(config_frame, 0, 3)
+        grid_layout.addWidget(config_frame, 1, 2, 1, 2) # Spojenie dvoch stĺpcov pre Konfig
 
+        # Pridanie stretch faktorov pre lepšie rozloženie
         grid_layout.setColumnStretch(0, 1)
         grid_layout.setColumnStretch(1, 1)
         grid_layout.setColumnStretch(2, 1)
         grid_layout.setColumnStretch(3, 1)
+        grid_layout.setRowStretch(0, 1)
+        grid_layout.setRowStretch(1, 1)
 
     def on_save_config(self):
         """
