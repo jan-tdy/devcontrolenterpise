@@ -16,6 +16,7 @@ PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
 SSH_USER = "dpv"  # Používateľ pre SSH
 SSH_PASS = "otj0711" # Heslo pre SSH (Pozor: Pre produkčné prostredie použiť SSH kľúče!)
 CENTRAL2_IP = "172.20.20.133" #IP adresa Central2
+AZ2000_IP = "172.20.20.116"
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
