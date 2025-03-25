@@ -1,17 +1,12 @@
 import sys
-import tkinter as tk
-from tkinter import ttk
 import subprocess
 import time
-import threading
-import os
 import socket
 import webbrowser
-
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QGridLayout, QLabel, QPushButton,
                              QLineEdit, QMessageBox, QFrame, QSizePolicy, QScrollArea)
-from PySide6.QtGui import QFont, QCursor, QPalette, QColor
+from PySide6.QtGui import QFont, QCursor
 from PySide6.QtCore import Qt, QTimer
 
 # Konštanty
@@ -31,6 +26,11 @@ GM3000_MAC = "00:c0:08:aa:35:12"
 
 # Funkcie
 def load_config():
+    """
+    Načíta konfiguráciu AZ2000 z konfiguračného súboru.
+    Ak súbor neexistuje, použije predvolené hodnoty a vytvorí prázdny konfiguračný súbor.
+    V prípade inej chyby pri čítaní súboru vypíše chybovú správu.
+    """
     global AZ2000_IP, SSH_USER2, SSH_PASS2
     try:
         with open(CONFIG_FILE, "r") as f:
@@ -50,6 +50,10 @@ def load_config():
         print(f"Chyba pri načítaní konfigurácie: {e}")
 
 def save_config(ip, user, password):
+    """
+    Uloží konfiguráciu AZ2000 (IP adresa, používateľské meno, heslo) do konfiguračného súboru.
+    V prípade úspešného uloženia vráti True, inak vráti False a vypíše chybovú správu.
+    """
     try:
         with open(CONFIG_FILE, "w") as f:
             f.write(f"{ip}\n")
@@ -62,6 +66,15 @@ def save_config(ip, user, password):
         return False
 
 def ovladaj_zasuvku(cislo_zasuvky, zapnut, label_widget):
+    """
+    Ovláda zadanú zásuvku (zapnutie alebo vypnutie) pomocou externého príkazu `sispmctl`.
+    Aktualizuje farbu LEDky v GUI na zeleno pri zapnutí, červeno pri vypnutí a šedo pri chybe.
+
+    Parametre:
+    cislo_zasuvky (int): Číslo zásuvky, ktorá sa má ovládať.
+    zapnut (bool): True pre zapnutie, False pre vypnutie.
+    label_widget (QLabel): Objekt Labelu z GUI, ktorý reprezentuje LEDku pre danú zásuvku.
+    """
     prikaz = f"sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"
     try:
         vystup = subprocess.check_output(prikaz, shell=True)
@@ -75,6 +88,10 @@ def ovladaj_zasuvku(cislo_zasuvky, zapnut, label_widget):
         label_widget.setStyleSheet("background-color: gray; border-radius: 10px;")
 
 def spusti_indistarter_c14():
+    """
+    Spustí príkaz `indistarter` na lokálnom počítači (C14).
+    Tento príkaz pravdepodobne spúšťa nejakú inú aplikáciu alebo službu.
+    """
     try:
         c14_prikaz = "indistarter"
         c14_vystup = subprocess.check_output(c14_prikaz, shell=True)
@@ -83,6 +100,10 @@ def spusti_indistarter_c14():
         print(f"Chyba pri spúšťaní INDISTARTERA na C14: {e}")
 
 def spusti_indistarter_az2000():
+    """
+    Spustí príkaz `indistarter` na vzdialenom počítači (AZ2000) cez SSH pripojenie.
+    Používa `sshpass` pre zadanie hesla neinteraktívne (POZOR: Bezpečné len v obmedzených prípadoch!).
+    """
     global AZ2000_IP, SSH_USER2, SSH_PASS2
     try:
         uvex_prikaz = f"sshpass -p '{SSH_PASS2}' ssh -o StrictHostKeyChecking=no {SSH_USER2}@{AZ2000_IP} 'indistarter'"
@@ -92,6 +113,10 @@ def spusti_indistarter_az2000():
         print(f"Chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
 
 def ovladaj_strechu(strana):
+    """
+    Ovláda strechu (sever alebo juh) pomocou externého príkazu `crelay`.
+    Spustí dva príkazy pre otvorenie a zatvorenie strechy pre zadanú stranu.
+    """
     if strana == "sever":
         prikaz1 = "crelay -s BITFT 2 ON"
         prikaz2 = "crelay -s BITFT 2 OFF"
@@ -111,6 +136,13 @@ def ovladaj_strechu(strana):
         print(f"Chyba pri ovládaní strechy ({strana}): {e}")
 
 def wake_on_lan(mac_adresa):
+    """
+    Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN.
+    Nahrádza volanie externého skriptu priamym kódom v Pythone.
+
+    Parameter:
+    mac_adresa (str): MAC adresa zariadenia, ktoré sa má prebudiť (napr. "00:11:22:33:44:55").
+    """
     print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
     try:
         mac_bytes = bytes.fromhex(mac_adresa.replace(':', ''))
@@ -123,6 +155,11 @@ def wake_on_lan(mac_adresa):
         QMessageBox.critical(None, "Chyba", f"Chyba pri odosielaní WOL paketu: {e}")
 
 def aktualizuj_program():
+    """
+    Aktualizuje program z GitHub repozitára.
+    Implementované priamo v Pythone namiesto volania externého skriptu.
+    Zastaví bežiaci program, stiahne novú verziu a reštartuje aplikáciu.
+    """
     try:
         print("Aktualizujem program...")
         prikaz_zastavenie = "pkill -f 'python3 /home/dpv/j44softapps-socketcontrol/C14.py'"
@@ -390,6 +427,11 @@ class MainWindow(QMainWindow):
         grid_layout.setColumnStretch(3, 1)
 
     def on_save_config(self):
+        """
+        Uloží konfiguráciu AZ2000 (IP adresa, používateľské meno, heslo) do konfiguračného súboru.
+        Zobrazí informačné alebo chybové okno v závislosti od výsledku uloženia.
+        Aktualizuje globálne premenné s novými hodnotami.
+        """
         global AZ2000_IP, SSH_USER2, SSH_PASS2
         ip = self.ip_input.text()
         user = self.user_input.text()
