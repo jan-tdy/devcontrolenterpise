@@ -6,6 +6,12 @@ import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
 from wakeonlan import send_magic_packet
 from datetime import datetime
+import paramiko
+
+# Konštanty pre SSH pripojenie k C14
+SSH_USER = "dpv"
+SSH_PASS = "otj0711"
+C14_IP = "172.20.20.103"  # IP adresa C14
 
 # Konštanty
 ZASUVKY = {
@@ -14,18 +20,32 @@ ZASUVKY = {
     "RC16": 2
 }
 PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
-SSH_USER = "dpv"  # Používateľ pre SSH
-SSH_PASS = "otj0711" # Heslo pre SSH (Pozor: Pre produkčné prostredie použiť SSH kľúče!)
 CENTRAL2_IP = "172.20.20.133" #IP adresa Central2
 AZ2000_IP = "172.20.20.116"
-SSH_USER2 = "pi2"  # Používateľ pre SSH
-SSH_PASS2 = "otj0711" # Heslo pre SSH (Pozor: Pre produkčné prostredie použiť SSH kľúče!)
+SSH_USER2 = "pi2"  # Používateľ pre SSH pre iné zariadenia
+SSH_PASS2 = "otj0711" # Heslo pre SSH pre iné zariadenia (Pozor: Pre produkčné prostredie použiť SSH kľúče!)
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 28-3-2025 01")
+        self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 28-3-2025 02 (SSH)")
         self.setGeometry(100, 100, 800, 600)
+
+        # Inicializácia SSH klienta pre C14
+        self.ssh_client_c14 = paramiko.SSHClient()
+        self.ssh_client_c14.set_missing_host_key_policy(paramiko.AutoAddPolicy()) # Automaticky pridáva neznáme hostiteľské kľúče (neodporúča sa pre produkciu)
+        try:
+            self.ssh_client_c14.connect(C14_IP, username=SSH_USER, password=SSH_PASS)
+            print(f"Úspešne pripojené k C14 na adrese: {C14_IP}")
+        except paramiko.AuthenticationException:
+            print(f"Chyba autentifikácie pri pripájaní k C14.")
+            self.ssh_client_c14 = None
+        except paramiko.SSHException as e:
+            print(f"Nepodarilo sa vytvoriť SSH spojenie s C14: {e}")
+            self.ssh_client_c14 = None
+        except Exception as e:
+            print(f"Iná chyba pri pripájaní k C14: {e}")
+            self.ssh_client_c14 = None
 
         # Hlavný layout
         self.main_layout = QtWidgets.QWidget()
@@ -43,6 +63,36 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_atacama_section()
         self.init_wake_on_lan_section()
         self.init_ota_section()
+
+    def closeEvent(self, event):
+        """Zabezpečí odpojenie SSH klienta pri zatvorení okna."""
+        if self.ssh_client_c14:
+            self.ssh_client_c14.close()
+            print("SSH spojenie s C14 bolo zatvorené.")
+        event.accept()
+
+    def _run_remote_command_c14(self, command):
+        """Spustí príkaz na C14 cez SSH."""
+        if self.ssh_client_c14:
+            try:
+                stdin, stdout, stderr = self.ssh_client_c14.exec_command(command)
+                output = stdout.read().decode().strip()
+                error = stderr.read().decode().strip()
+                if error:
+                    print(f"Chyba na C14 pri vykonávaní príkazu '{command}': {error}")
+                    return None, error
+                else:
+                    print(f"Výstup z C14 pre príkaz '{command}': {output}")
+                    return output, None
+            except paramiko.SSHException as e:
+                print(f"SSH chyba pri vykonávaní príkazu '{command}' na C14: {e}")
+                return None, str(e)
+            except Exception as e:
+                print(f"Iná chyba pri vykonávaní príkazu '{command}' na C14: {e}")
+                return None, str(e)
+        else:
+            print("Nie je aktívne SSH spojenie s C14.")
+            return None, "Žiadne SSH spojenie"
 
     def init_atacama_section(self):
         """Inicializuje sekciu ATACAMA."""
@@ -70,8 +120,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # INDISTARTER
         indistarter_c14_button = QtWidgets.QPushButton("Spustiť INDISTARTER C14")
         indistarter_az2000_button = QtWidgets.QPushButton("Spustiť INDISTARTER AZ2000")
-        indistarter_c14_button.clicked.connect(self.spusti_indistarter_c14)
-        indistarter_az2000_button.clicked.connect(self.spusti_indistarter_az2000)
+        indistarter_c14_button.clicked(self.spusti_indistarter_c14)
+        indistarter_az2000_button.clicked(self.spusti_indistarter_az2000)
         layout.addWidget(indistarter_c14_button, 1, 0, 1, 3)
         layout.addWidget(indistarter_az2000_button, 2, 0, 1, 3) # Pridané tlačidlo pre AZ2000
 
@@ -125,7 +175,7 @@ class MainWindow(QtWidgets.QMainWindow):
         group_box = QtWidgets.QGroupBox("OTA Aktualizácie")
         layout = QtWidgets.QGridLayout()
         aktualizovat_button = QtWidgets.QPushButton("Aktualizovať program")
-        aktualizovat_button.clicked.connect(self.aktualizuj_program)
+        aktualizovat_button.clicked(self.aktualizuj_program)
         layout.addWidget(aktualizovat_button, 0, 0)
         group_box.setLayout(layout)
         self.grid_layout.addWidget(group_box, 1, 0)
@@ -139,27 +189,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.grid_layout.addWidget(kamera_astrofoto_label, 2, 1)
 
     def ovladaj_zasuvku(self, cislo_zasuvky, zapnut, label_name):
-        """Ovláda zadanú zásuvku pomocou príkazu `sispmctl`."""
+        """Ovláda zadanú zásuvku pomocou príkazu `sispmctl` na C14 cez SSH."""
         prikaz = f"sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"
-        try:
-            vystup = subprocess.check_output(prikaz, shell=True)
-            print(vystup.decode())
+        vystup, chyba = self._run_remote_command_c14(prikaz)
+        if chyba is None:
             if zapnut:
                 self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_green.png"))
             else:
                 self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_red.png"))
-        except subprocess.CalledProcessError as e:
-            print(f"Chyba pri ovládaní zásuvky {cislo_zasuvky}: {e}")
+        else:
+            print(f"Chyba pri ovládaní zásuvky {cislo_zasuvky} na C14: {chyba}")
             self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_def.png"))
 
     def spusti_indistarter_c14(self):
-        """Spustí príkaz `indistarter` na C14."""
-        try:
-            c14_prikaz = "indistarter"
-            c14_vystup = subprocess.check_output(c14_prikaz, shell=True)
-            print(f"INDISTARTER na C14: {c14_vystup.decode()}")
-        except subprocess.CalledProcessError as e:
-            print(f"Chyba pri spúšťaní INDISTARTERA na C14: {e}")
+        """Spustí príkaz `indistarter` na C14 cez SSH."""
+        prikaz = "indistarter"
+        vystup, chyba = self._run_remote_command_c14(prikaz)
+        if chyba:
+            print(f"Chyba pri spúšťaní INDISTARTERA na C14: {chyba}")
 
     def spusti_indistarter_az2000(self):
         """Spustí príkaz `indistarter` na UVEX-RPi (AZ2000) cez SSH."""
@@ -213,64 +260,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 print("Neplatný formát času. Použite RRRR-MM-DD HH:MM:SS")
 
     def _spusti_ovladanie_strechy(self, strana):
-        """Spustí príkazy pre ovládanie strechy."""
+        """Spustí príkazy pre ovládanie strechy na C14 cez SSH."""
         if strana == "sever":
             prikaz1 = "crelay -s BITFT 2 ON"
-            prikaz2 = "crelay -s BITFT 2 OFF"
-        elif strana == "juh":
-            prikaz1 = "crelay -s BITFT 1 ON"
-            prikaz2 = "crelay -s BITFT 1 OFF"
-        else:
-            print("Neplatná strana strechy.")
-            return
-
-        try:
-            subprocess.run(prikaz1, shell=True, check=True)
-            time.sleep(2)
-            subprocess.run(prikaz2, shell=True, check=True)
-            print(f"Strecha ({strana}) ovládaná.")
-            if strana == "sever":
-                self.sever_datum_cas_edit.clear()
-                if self.sever_casovac:
-                    self.sever_casovac.stop()
-                    self.sever_casovac = None
-            elif strana == "juh":
-                self.juh_datum_cas_edit.clear()
-                if self.juh_casovac:
-                    self.juh_casovac.stop()
-                    self.juh_casovac = None
-        except subprocess.CalledProcessError as e:
-            print(f"Chyba pri ovládaní strechy ({strana}): {e}")
-
-    def wake_on_lan(self, mac_adresa):
-        """Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN."""
-        print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
-        try:
-            send_magic_packet(mac_adresa)
-        except Exception as e:
-            print(f"Chyba pri odosielaní magic packetu: {e}")
-
-    def aktualizuj_program(self):
-        """Aktualizuje program z GitHub repozitára."""
-        try:
-            # 1. Stiahnutie aktualizovaného súboru
-            print("Aktualizujem program...")
-            prikaz_stiahnutie = f"curl -O https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/refs/heads/main/C14/C14.py"
-            subprocess.run(prikaz_stiahnutie, shell=True, check=True)
-
-            # 2. Nahradenie existujúceho súboru
-            prikaz_nahradenie = f"cp C14.py {PROGRAM_CESTA}"
-            subprocess.run(prikaz_nahradenie, shell=True, check=True)
-
-            # 3. Reštart aplikácie (ak je to potrebné)
-            print("Program bol aktualizovaný. Zavrite toto okno a otvorte program nanovo!!!!")
-            pass
-        except subprocess.CalledProcessError as e:
-            print(f"Chyba pri aktualizácii programu: {e}")
-        except Exception as e:
-            print(f"Neočakávaná chyba: {e}")
-
-if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    hlavne_okno = MainWindow()
-    hlav
