@@ -5,6 +5,7 @@ import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
 from wakeonlan import send_magic_packet
+from datetime import datetime
 
 # Konštanty
 ZASUVKY = {
@@ -23,7 +24,7 @@ SSH_PASS2 = "otj0711" # Heslo pre SSH (Pozor: Pre produkčné prostredie použi�
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 01") # Zmenené na C14
+        self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 28-3-2025 01")
         self.setGeometry(100, 100, 800, 600)
 
         # Hlavný layout
@@ -33,6 +34,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main_layout.setLayout(self.grid_layout)
 
         self.status_labels = {}
+        self.sever_casovac = None
+        self.juh_casovac = None
+        self.sever_datum_cas_edit = None
+        self.juh_datum_cas_edit = None
 
         # Inicializácia sekcií
         self.init_atacama_section()
@@ -71,16 +76,33 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(indistarter_az2000_button, 2, 0, 1, 3) # Pridané tlačidlo pre AZ2000
 
         # Strecha
-        strecha_layout = QtWidgets.QGridLayout()
         strecha_group = QtWidgets.QGroupBox("Strecha")
-        sever_button = QtWidgets.QPushButton("Sever")
-        juh_button = QtWidgets.QPushButton("Juh")
+        strecha_layout = QtWidgets.QGridLayout()
+
+        # Sever
+        sever_label = QtWidgets.QLabel("Sever:")
+        sever_button = QtWidgets.QPushButton("Spustiť Sever")
+        self.sever_datum_cas_edit = QtWidgets.QLineEdit()
+        self.sever_datum_cas_edit.setPlaceholderText("RRRR-MM-DD HH:MM:SS")
         sever_button.clicked.connect(lambda: self.ovladaj_strechu("sever"))
+
+        strecha_layout.addWidget(sever_label, 0, 0)
+        strecha_layout.addWidget(sever_button, 0, 1)
+        strecha_layout.addWidget(self.sever_datum_cas_edit, 1, 0, 1, 2)
+
+        # Juh
+        juh_label = QtWidgets.QLabel("Juh:")
+        juh_button = QtWidgets.QPushButton("Spustiť Juh")
+        self.juh_datum_cas_edit = QtWidgets.QLineEdit()
+        self.juh_datum_cas_edit.setPlaceholderText("RRRR-MM-DD HH:MM:SS")
         juh_button.clicked.connect(lambda: self.ovladaj_strechu("juh"))
-        strecha_layout.addWidget(sever_button, 0, 0)
-        strecha_layout.addWidget(juh_button, 0, 1)
+
+        strecha_layout.addWidget(juh_label, 2, 0)
+        strecha_layout.addWidget(juh_button, 2, 1)
+        strecha_layout.addWidget(self.juh_datum_cas_edit, 3, 0, 1, 2)
+
         strecha_group.setLayout(strecha_layout)
-        layout.addWidget(strecha_group, 3, 0, 1, 3) # Zmenené z 2 na 3
+        layout.addWidget(strecha_group, 3, 0, 1, 3)
 
         group_box.setLayout(layout)
         self.grid_layout.addWidget(group_box, 0, 0)
@@ -143,14 +165,55 @@ class MainWindow(QtWidgets.QMainWindow):
         """Spustí príkaz `indistarter` na UVEX-RPi (AZ2000) cez SSH."""
         try:
             uvex_prikaz = f"ssh {SSH_USER2}@{AZ2000_IP} indistarter"
-            uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, password=SSH_PASS2) #POZOR: Heslo by nemalo byt v kode
+            uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, input=f"{SSH_PASS2}\n".encode()) # Bezpečnejšie zadávanie hesla (stále neodporúčané pre produkciu)
             print(f"INDISTARTER na UVEX-RPi (AZ2000): {uvex_vystup.decode()}")
         except subprocess.CalledProcessError as e:
             print(f"Chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
+        except FileNotFoundError:
+            print("Chyba: Príkaz 'ssh' nebol nájdený. Skontrolujte, či je nainštalovaný.")
+        except Exception as e:
+            print(f"Iná chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
 
 
     def ovladaj_strechu(self, strana):
-        """Ovláda strechu (sever/juh) pomocou príkazu `crelay`."""
+        """Ovláda strechu (sever/juh) okamžite alebo na zadaný čas."""
+        if strana == "sever":
+            cas_text = self.sever_datum_cas_edit.text()
+        elif strana == "juh":
+            cas_text = self.juh_datum_cas_edit.text()
+        else:
+            print("Neplatná strana strechy.")
+            return
+
+        if not cas_text:
+            self._spusti_ovladanie_strechy(strana)
+        else:
+            try:
+                planovany_cas = datetime.strptime(cas_text, "%Y-%m-%d %H:%M:%S")
+                teraz = datetime.now()
+                if planovany_cas <= teraz:
+                    self._spusti_ovladanie_strechy(strana)
+                else:
+                    if strana == "sever":
+                        if self.sever_casovac:
+                            self.sever_casovac.stop()
+                        self.sever_casovac = QtCore.QTimer()
+                        self.sever_casovac.timeout.connect(lambda: self._spusti_ovladanie_strechy("sever"))
+                        self.sever_casovac.start(int((planovany_cas - teraz).total_seconds()) * 1000)
+                        print(f"Spustenie strechy sever naplánované na: {planovany_cas}")
+                    elif strana == "juh":
+                        if self.juh_casovac:
+                            self.juh_casovac.stop()
+                        self.juh_casovac = QtCore.QTimer()
+                        self.juh_casovac.timeout.connect(lambda: self._spusti_ovladanie_strechy("juh"))
+                        self.juh_casovac.start(int((planovany_cas - teraz).total_seconds()) * 1000)
+                        print(f"Spustenie strechy juh naplánované na: {planovany_cas}")
+
+            except ValueError:
+                print("Neplatný formát času. Použite RRRR-MM-DD HH:MM:SS")
+
+    def _spusti_ovladanie_strechy(self, strana):
+        """Spustí príkazy pre ovládanie strechy."""
         if strana == "sever":
             prikaz1 = "crelay -s BITFT 2 ON"
             prikaz2 = "crelay -s BITFT 2 OFF"
@@ -166,12 +229,21 @@ class MainWindow(QtWidgets.QMainWindow):
             time.sleep(2)
             subprocess.run(prikaz2, shell=True, check=True)
             print(f"Strecha ({strana}) ovládaná.")
+            if strana == "sever":
+                self.sever_datum_cas_edit.clear()
+                if self.sever_casovac:
+                    self.sever_casovac.stop()
+                    self.sever_casovac = None
+            elif strana == "juh":
+                self.juh_datum_cas_edit.clear()
+                if self.juh_casovac:
+                    self.juh_casovac.stop()
+                    self.juh_casovac = None
         except subprocess.CalledProcessError as e:
             print(f"Chyba pri ovládaní strechy ({strana}): {e}")
 
     def wake_on_lan(self, mac_adresa):
         """Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN."""
-        # Implementácia Wake-on-LAN (mimo rozsahu tohto príkladu, vyžaduje knižnicu ako wakeonlan)
         print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
         try:
             send_magic_packet(mac_adresa)
@@ -201,5 +273,4 @@ class MainWindow(QtWidgets.QMainWindow):
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     hlavne_okno = MainWindow()
-    hlavne_okno.show()
-    sys.exit(app.exec_())
+    hlav
