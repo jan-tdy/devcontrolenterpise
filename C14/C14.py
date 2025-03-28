@@ -153,7 +153,7 @@ class MainWindow(QtWidgets.QMainWindow):
         group_box.setLayout(layout)
         self.grid_layout.addWidget(group_box, 0, 1)
 
-    def init_ota_section(self):
+   def init_ota_section(self):
         group_box = QtWidgets.QGroupBox("OTA Aktualiz�cie")
         layout = QtWidgets.QGridLayout()
         aktualizovat_button = QtWidgets.QPushButton("Aktualizova? program")
@@ -166,6 +166,21 @@ class MainWindow(QtWidgets.QMainWindow):
         kamera_atacama_label.setOpenExternalLinks(True)
         kamera_astrofoto_label = QtWidgets.QLabel("<a href='http://172.20.20.131'>Kamera Astrofoto</a>")
         kamera_astrofoto_label.setOpenExternalLinks(True)
-        self.grid_layout.addWidget(kamera_atacama_label, 1, 1)
-        self.grid_layout.addWidget(kamera_astrofoto_label, 2, 1)
 
+        kamery_layout = QtWidgets.QVBoxLayout()
+        kamery_layout.addWidget(kamera_atacama_label)
+        kamery_layout.addWidget(kamera_astrofoto_label)
+        kamery_layout.addStretch()
+
+        kamery_widget = QtWidgets.QWidget()
+        kamery_widget.setLayout(kamery_layout)
+        self.grid_layout.addWidget(kamery_widget, 1, 1, 2, 1)
+
+        spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.grid_layout.addItem(spacer, 3, 0)
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    hlavne_okno = MainWindow()
+    hlavne_okno.show()
+    sys.exit(app.exec_())
