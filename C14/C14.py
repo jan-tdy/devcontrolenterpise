@@ -144,8 +144,8 @@ class MainWindow(QtWidgets.QMainWindow):
         kamera_astrofoto_label.setOpenExternalLinks(True)
         self.grid_layout.addWidget(kamera_atacama_label, 1, 1)
         self.grid_layout.addWidget(kamera_astrofoto_label, 2, 1)
-        
-def ovladaj_zasuvku(self, cislo_zasuvky, zapnut, label_name):
+
+    def ovladaj_zasuvku(self, cislo_zasuvky, zapnut, label_name):
         """Ovláda zadanú zásuvku pomocou príkazu `sispmctl` a následne aktualizuje status."""
         prikaz = f"sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"
         try:
