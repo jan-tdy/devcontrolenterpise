@@ -5,6 +5,7 @@ import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
 from wakeonlan import send_magic_packet
+from datetime import datetime
 
 # Konštanty
 ZASUVKY = {
@@ -23,7 +24,7 @@ SSH_PASS2 = "otj0711" # Heslo pre SSH (Pozor: Pre produkčné prostredie použi�
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 01") # Zmenené na C14
+        self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 02") # Aktualizovaná verzia
         self.setGeometry(100, 100, 800, 600)
 
         # Hlavný layout
@@ -42,8 +43,14 @@ class MainWindow(QtWidgets.QMainWindow):
         # Získanie počiatočného stavu zásuviek
         self.aktualizuj_stav_zasuviek()
 
+        # Spustenie časovača pre pravidelnú aktualizáciu stavu zásuviek (každých 5 minút)
+        self.status_timer = QtCore.QTimer()
+        self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
+        self.status_timer.start(5 * 60 * 1000) # 5 minút v milisekundách
+
     def aktualizuj_stav_zasuviek(self):
         """Získava a aktualizuje stav všetkých zásuviek."""
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
         for name, cislo in ZASUVKY.items():
             self.zisti_stav_zasuvky(cislo, name)
 
@@ -102,17 +109,88 @@ class MainWindow(QtWidgets.QMainWindow):
         # Strecha
         strecha_layout = QtWidgets.QGridLayout()
         strecha_group = QtWidgets.QGroupBox("Strecha")
-        sever_button = QtWidgets.QPushButton("Sever")
-        juh_button = QtWidgets.QPushButton("Juh")
-        sever_button.clicked.connect(lambda: self.ovladaj_strechu("sever"))
-        juh_button.clicked.connect(lambda: self.ovladaj_strechu("juh"))
-        strecha_layout.addWidget(sever_button, 0, 0)
-        strecha_layout.addWidget(juh_button, 0, 1)
+        self.sever_button = QtWidgets.QPushButton("Sever")
+        self.juh_button = QtWidgets.QPushButton("Juh")
+        self.sever_button.clicked.connect(lambda: self.ovladaj_strechu("sever"))
+        self.juh_button.clicked.connect(lambda: self.ovladaj_strechu("juh"))
+
+        # Načasovanie strechy
+        self.casovac_strechy_group = QtWidgets.QGroupBox("Načasovať strechu")
+        casovac_layout = QtWidgets.QGridLayout()
+        self.casovac_strechy_enable = QtWidgets.QCheckBox("Aktivovať časovač")
+        self.casovac_strechy_enable.stateChanged.connect(self.toggle_casovac_strechy)
+        self.casovac_strechy_smer_label = QtWidgets.QLabel("Smer:")
+        self.casovac_strechy_smer_combo = QtWidgets.QComboBox()
+        self.casovac_strechy_smer_combo.addItem("Sever")
+        self.casovac_strechy_smer_combo.addItem("Juh")
+        self.casovac_strechy_cas_label = QtWidgets.QLabel("Čas (HH:MM):")
+        self.casovac_strechy_cas_input = QtWidgets.QLineEdit()
+        self.casovac_strechy_cas_input.setInputMask("HH:MM")
+        self.casovac_strechy_button = QtWidgets.QPushButton("Nastaviť časovač")
+        self.casovac_strechy_button.clicked.connect(self.nastav_casovac_strechy)
+        self.casovac_strechy_button.setEnabled(False) # Na začiatku je časovač vypnutý
+
+        casovac_layout.addWidget(self.casovac_strechy_enable, 0, 0, 1, 2)
+        casovac_layout.addWidget(self.casovac_strechy_smer_label, 1, 0)
+        casovac_layout.addWidget(self.casovac_strechy_smer_combo, 1, 1)
+        casovac_layout.addWidget(self.casovac_strechy_cas_label, 2, 0)
+        casovac_layout.addWidget(self.casovac_strechy_cas_input, 2, 1)
+        casovac_layout.addWidget(self.casovac_strechy_button, 3, 0, 1, 2)
+        self.casovac_strechy_group.setLayout(casovac_layout)
+
+        strecha_layout.addWidget(self.sever_button, 0, 0)
+        strecha_layout.addWidget(self.juh_button, 0, 1)
         strecha_group.setLayout(strecha_layout)
-        layout.addWidget(strecha_group, 3, 0, 1, 3) # Zmenené z 2 na 3
+        layout.addWidget(strecha_group, 3, 0, 1, 3)
+        layout.addWidget(self.casovac_strechy_group, 4, 0, 1, 3)
 
         group_box.setLayout(layout)
         self.grid_layout.addWidget(group_box, 0, 0)
+
+        # Inicializácia časovača pre načasovanú strechu
+        self.strecha_casovac = QtCore.QTimer()
+        self.strecha_casovac.timeout.connect(self.skontroluj_cas_strechy)
+        self.strecha_casovac.start(60 * 1000) # Kontrola každú minútu
+        self.nacasovana_strecha_aktivna = False
+        self.nacasovany_smer_strechy = None
+        self.nacasovany_cas_strechy = None
+
+    def toggle_casovac_strechy(self, state):
+        """Povolí alebo zakáže ovládacie prvky pre časovač strechy."""
+        enabled = (state == QtCore.Qt.Checked)
+        self.casovac_strechy_smer_combo.setEnabled(enabled)
+        self.casovac_strechy_cas_input.setEnabled(enabled)
+        self.casovac_strechy_button.setEnabled(enabled)
+        if not enabled:
+            self.nacasovana_strecha_aktivna = False
+            self.nacasovany_smer_strechy = None
+            self.nacasovany_cas_strechy = None
+            print("Časovač strechy bol deaktivovaný.")
+
+    def nastav_casovac_strechy(self):
+        """Nastaví časovač pre automatické ovládanie strechy."""
+        smer = self.casovac_strechy_smer_combo.currentText().lower()
+        cas_str = self.casovac_strechy_cas_input.text()
+
+        try:
+            datetime.strptime(cas_str, "%H:%M")
+            self.nacasovana_strecha_aktivna = True
+            self.nacasovany_smer_strechy = smer
+            self.nacasovany_cas_strechy = cas_str
+            print(f"Časovač strechy nastavený na {self.nacasovany_cas_strechy} ({self.nacasovany_smer_strechy}).")
+        except ValueError:
+            QtWidgets.QMessageBox.warning(self, "Chyba", "Nesprávny formát času (HH:MM).")
+
+    def skontroluj_cas_strechy(self):
+        """Pravidelne kontroluje, či nastal čas pre ovládanie strechy."""
+        if self.nacasovana_strecha_aktivna and self.nacasovany_cas_strechy:
+            aktualny_cas = datetime.now().strftime("%H:%M")
+            if aktualny_cas == self.nacasovany_cas_strechy:
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Nastal čas na ovládanie strechy na '{self.nacasovany_smer_strechy}'.")
+                self.ovladaj_strechu(self.nacasovany_smer_strechy)
+                self.nacasovana_strecha_aktivna = False # Vypneme časovač po vykonaní akcie
+                self.casovac_strechy_enable.setChecked(False) # Deaktivujeme aj checkbox
+                QtWidgets.QMessageBox.information(self, "Časovač strechy", f"Strecha bola presunutá na '{self.nacasovany_smer_strechy}'. Časovač bol deaktivovaný.")
 
     def init_wake_on_lan_section(self):
         """Inicializuje sekciu WAKE-ON-LAN."""
@@ -155,7 +233,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.zisti_stav_zasuvky(cislo_zasuvky, label_name)
         except subprocess.CalledProcessError as e:
             print(f"Chyba pri ovládaní zásuvky {cislo_zasuvky}: {e}")
-            # Aj po neúspešnom ovládaní sa pokúsime zistiť aktuálny stav (možno sa stav nezmenil)
+            # Aj po neúspešnom ovládaní sa pokúsime zistiť aktuálny stav (možno sa stav
             self.zisti_stav_zasuvky(cislo_zasuvky, label_name)
 
     def spusti_indistarter_c14(self):
