@@ -47,10 +47,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
         self.status_timer.start(5 * 60 * 1000) # 5 minút v milisekundách
+        
+        # Logovacia sekcia
+        self.log_box = QtWidgets.QTextEdit()
+        self.log_box.setReadOnly(True)
+        self.grid_layout.addWidget(self.log_box, 3, 0, 1, 2)
+
 
     def aktualizuj_stav_zasuviek(self):
         """Získava a aktualizuje stav všetkých zásuviek."""
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
+        self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
         for name, cislo in ZASUVKY.items():
             self.zisti_stav_zasuvky(cislo, name)
 
@@ -64,13 +70,13 @@ class MainWindow(QtWidgets.QMainWindow):
             elif vystup_stav == "0":
                 self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_red.png"))
             else:
-                print(f"Neočakávaný výstup pre stav zásuvky {cislo_zasuvky}: '{vystup_stav}'")
+                self.loguj(f"Neočakávaný výstup pre stav zásuvky {cislo_zasuvky}: '{vystup_stav}'")
                 self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_def.png"))
         except subprocess.CalledProcessError as e:
-            print(f"Chyba pri zisťovaní stavu zásuvky {cislo_zasuvky}: {e}")
+            self.loguj(f"Chyba pri zisťovaní stavu zásuvky {cislo_zasuvky}: {e}")
             self.status_labels[label_name].setPixmap(QtGui.QPixmap("led_def.png"))
         except FileNotFoundError:
-            print("Príkaz 'sispmctl' nebol nájdený. Nie je možné zistiť stav zásuviek.")
+            self.loguj("Príkaz 'sispmctl' nebol nájdený. Nie je možné zistiť stav zásuviek.")
             for name in ZASUVKY:
                 self.status_labels[name].setPixmap(QtGui.QPixmap("led_def.png"))
 
@@ -165,7 +171,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.nacasovana_strecha_aktivna = False
             self.nacasovany_smer_strechy = None
             self.nacasovany_cas_strechy = None
-            print("Časovač strechy bol deaktivovaný.")
+            self.loguj("Časovač strechy bol deaktivovaný.")
 
     def nastav_casovac_strechy(self):
         """Nastaví časovač pre automatické ovládanie strechy."""
@@ -177,7 +183,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.nacasovana_strecha_aktivna = True
             self.nacasovany_smer_strechy = smer
             self.nacasovany_cas_strechy = cas_str
-            print(f"Časovač strechy nastavený na {self.nacasovany_cas_strechy} ({self.nacasovany_smer_strechy}).")
+            self.loguj(f"Časovač strechy nastavený na {self.nacasovany_cas_strechy} ({self.nacasovany_smer_strechy}).")
         except ValueError:
             QtWidgets.QMessageBox.warning(self, "Chyba", "Nesprávny formát času (HH:MM).")
 
@@ -186,7 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.nacasovana_strecha_aktivna and self.nacasovany_cas_strechy:
             aktualny_cas = datetime.now().strftime("%H:%M")
             if aktualny_cas == self.nacasovany_cas_strechy:
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Nastal čas na ovládanie strechy na '{self.nacasovany_smer_strechy}'.")
+                self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Nastal čas na ovládanie strechy na '{self.nacasovany_smer_strechy}'.")
                 self.ovladaj_strechu(self.nacasovany_smer_strechy)
                 self.nacasovana_strecha_aktivna = False # Vypneme časovač po vykonaní akcie
                 self.casovac_strechy_enable.setChecked(False) # Deaktivujeme aj checkbox
@@ -228,11 +234,11 @@ class MainWindow(QtWidgets.QMainWindow):
         prikaz = f"sispmctl -{'o' if zapnut else 'f'} {cislo_zasuvky}"
         try:
             vystup = subprocess.check_output(prikaz, shell=True)
-            print(vystup.decode())
+            self.loguj(vystup.decode())
             # Po úspešnom ovládaní zistíme aktuálny stav a aktualizujeme ikonu
             self.zisti_stav_zasuvky(cislo_zasuvky, label_name)
         except subprocess.CalledProcessError as e:
-            print(f"Chyba pri ovládaní zásuvky {cislo_zasuvky}: {e}")
+            self.loguj(f"Chyba pri ovládaní zásuvky {cislo_zasuvky}: {e}")
             # Aj po neúspešnom ovládaní sa pokúsime zistiť aktuálny stav (možno sa stav
             self.zisti_stav_zasuvky(cislo_zasuvky, label_name)
 
@@ -241,20 +247,20 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             c14_prikaz = "indistarter"
             c14_vystup = subprocess.check_output(c14_prikaz, shell=True)
-            print(f"INDISTARTER na C14: {c14_vystup.decode()}")
+            self.loguj(f"INDISTARTER na C14: {c14_vystup.decode()}")
         except subprocess.CalledProcessError as e:
-            print(f"Chyba pri spúšťaní INDISTARTERA na C14: {e}")
+            self.loguj(f"Chyba pri spúšťaní INDISTARTERA na C14: {e}")
 
     def spusti_indistarter_az2000(self):
         """Spustí príkaz `indistarter` na UVEX-RPi (AZ2000) cez SSH."""
         try:
             uvex_prikaz = f"ssh {SSH_USER2}@{AZ2000_IP} indistarter"
             uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, text=True, input=f"{SSH_PASS2}\n".encode()) # POZOR: Stále neodporúčané heslo v kóde
-            print(f"INDISTARTER na UVEX-RPi (AZ2000): {uvex_vystup.decode()}")
+            self.loguj(f"INDISTARTER na UVEX-RPi (AZ2000): {uvex_vystup.decode()}")
         except subprocess.CalledProcessError as e:
-            print(f"Chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
+            self.loguj(f"Chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
         except FileNotFoundError:
-            print("Príkaz 'ssh' nebol nájdený.")
+            self.loguj("Príkaz 'ssh' nebol nájdený.")
 
     def ovladaj_strechu(self, strana):
         """Ovláda strechu (sever/juh) pomocou príkazu `crelay`."""
@@ -265,32 +271,32 @@ class MainWindow(QtWidgets.QMainWindow):
             prikaz1 = "crelay -s BITFT 1 ON"
             prikaz2 = "crelay -s BITFT 1 OFF"
         else:
-            print("Neplatná strana strechy.")
+            self.loguj("Neplatná strana strechy.")
             return
 
         try:
             subprocess.run(prikaz1, shell=True, check=True)
             time.sleep(2)
             subprocess.run(prikaz2, shell=True, check=True)
-            print(f"Strecha ({strana}) ovládaná.")
+            self.loguj(f"Strecha ({strana}) ovládaná.")
         except subprocess.CalledProcessError as e:
-            print(f"Chyba pri ovládaní strechy ({strana}): {e}")
+            self.loguj(f"Chyba pri ovládaní strechy ({strana}): {e}")
         except FileNotFoundError:
-            print("Príkaz 'crelay' nebol nájdený.")
+            self.loguj("Príkaz 'crelay' nebol nájdený.")
 
     def wake_on_lan(self, mac_adresa):
         """Odošle magic packet pre prebudenie zariadenia pomocou Wake-on-LAN."""
-        print(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
+        self.loguj(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
         try:
             send_magic_packet(mac_adresa)
         except Exception as e:
-            print(f"Chyba pri odosielaní magic packetu: {e}")
+            self.loguj(f"Chyba pri odosielaní magic packetu: {e}")
 
     def aktualizuj_program(self):
         """Aktualizuje program z GitHub repozitára."""
         try:
             # 1. Stiahnutie aktualizovaného súboru
-            print("Aktualizujem program...")
+            self.loguj("Aktualizujem program...")
             prikaz_stiahnutie = f"curl -O https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/refs/heads/main/C14/C14.py"
             subprocess.run(prikaz_stiahnutie, shell=True, check=True)
 
@@ -299,14 +305,19 @@ class MainWindow(QtWidgets.QMainWindow):
             subprocess.run(prikaz_nahradenie, shell=True, check=True)
 
             # 3. Reštart aplikácie (ak je to potrebné)
-            print("Program bol aktualizovaný. Zavrite toto okno a otvorte program nanovo!!!!")
+            self.loguj("Program bol aktualizovaný. Zavrite toto okno a otvorte program nanovo!!!!")
             pass
         except subprocess.CalledProcessError as e:
-            print(f"Chyba pri aktualizácii programu: {e}")
+            self.loguj(f"Chyba pri aktualizácii programu: {e}")
         except FileNotFoundError:
-            print("Príkaz 'curl' alebo 'cp' nebol nájdený.")
+            self.loguj("Príkaz 'curl' alebo 'cp' nebol nájdený.")
         except Exception as e:
-            print(f"Neočakávaná chyba: {e}")
+            self.loguj(f"Neočakávaná chyba: {e}")
+    def loguj(self, sprava):
+        """Zobrazí správu v logovej sekcii."""
+        cas = QtCore.QTime.currentTime().toString()
+        self.log_box.append(f"[{cas}] {sprava}")
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
