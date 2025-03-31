@@ -51,7 +51,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Logovacia sekcia
         self.log_box = QtWidgets.QTextEdit()
         self.log_box.setReadOnly(True)
-        self.grid_layout.addWidget(self.log_box, 3, 0, 1, 2)
+        self.log_box.setMinimumHeight(100)
+        self.grid_layout.addWidget(self.log_box, 99, 0, 1, 2)
 
 
     def aktualizuj_stav_zasuviek(self):
