@@ -317,6 +317,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """Zobrazí správu v logovej sekcii."""
         cas = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{cas}] {sprava}")
+        self.log_box.moveCursor(QtGui.QTextCursor.End)
+
 
 
 if __name__ == "__main__":
