@@ -34,6 +34,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.main_layout.setLayout(self.grid_layout)
 
         self.status_labels = {}
+        
+        # Logovacia sekcia
+        self.log_box = QtWidgets.QTextEdit()
+        self.log_box.setReadOnly(True)
+        self.log_box.setMinimumHeight(100)
+        self.grid_layout.addWidget(self.log_box, 99, 0, 1, 2)
 
         # Inicializácia sekcií
         self.init_atacama_section()
@@ -48,12 +54,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
         self.status_timer.start(5 * 60 * 1000) # 5 minút v milisekundách
         
-        # Logovacia sekcia
-        self.log_box = QtWidgets.QTextEdit()
-        self.log_box.setReadOnly(True)
-        self.log_box.setMinimumHeight(100)
-        self.grid_layout.addWidget(self.log_box, 99, 0, 1, 2)
-
 
     def aktualizuj_stav_zasuviek(self):
         """Získava a aktualizuje stav všetkých zásuviek."""
