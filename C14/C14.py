@@ -172,7 +172,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def skontroluj_cas_strechy(self):
         if self.nacasovana_strecha_aktivna and self.nacasovany_cas_strechy_utc:
             try:
-                nacasovany_cas_dt = datetime.strptime(self.nacasovany_cas_strechy_utc, "%Y-%m-%d %H:%M")
+                nacasovany_cas_dt = pytz.utc.localize(datetime.strptime(self.nacasovany_cas_strechy_utc, "%Y-%m-%d %H:%M"))
                 teraz_utc = datetime.now(pytz.utc)
                 if teraz_utc >= nacasovany_cas_dt:
                     self.loguj(
