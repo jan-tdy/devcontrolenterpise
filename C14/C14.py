@@ -148,9 +148,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.casovac_strechy_smer_combo = QtWidgets.QComboBox()  # Combo box pre výber smeru posunu
         self.casovac_strechy_smer_combo.addItem("sever")  # Pridanie možnosti "sever"
         self.casovac_strechy_smer_combo.addItem("juh")  # Pridanie možnosti "juh"
-        self.casovac_strechy_cas_label = QtWidgets.QLabel("Čas (UTC HH:MM):")  # Label pre zadanie času
-        self.casovac_strechy_cas_input = QtWidgets.QLineEdit()  # Pole pre zadanie času
-        self.casovac_strechy_cas_input.setInputMask("HH:MM")  # Nastavenie masky pre formát času
+        self.casovac_strechy_cas_label = QtWidgets.QLabel("Čas (YYYY-MM-DD HH:MM):")  # Label pre zadanie času
+        self.casovac_strechy_cas_input = QtWidgets.QLineEdit()  # Zmena na QLineEdit
+        self.casovac_strechy_cas_input.setPlaceholderText("YYYY-MM-DD HH:MM")  # Nastavenie placeholderu s formátom
         self.casovac_strechy_button = QtWidgets.QPushButton("Nastaviť časovač")  # Tlačidlo pre nastavenie časovača
         self.casovac_strechy_button.clicked.connect(self.nastav_casovac_strechy)  # Pripojenie funkcie pre nastavenie časovača
         self.casovac_strechy_button.setEnabled(False)  # Na začiatku je tlačidlo neaktívne
@@ -207,13 +207,13 @@ class MainWindow(QtWidgets.QMainWindow):
         cas_utc_str = self.casovac_strechy_cas_input.text()  # Získanie času posunu z textového poľa
 
         try:
-            datetime.strptime(cas_utc_str, "%H:%M")  # Skontrolujeme, či je formát času správny
+            datetime.strptime(cas_utc_str, "%Y-%m-%d %H:%M")  # Skontrolujeme, či je formát času správny
             self.nacasovana_strecha_aktivna = True  # Nastavenie príznaku, že je časovač aktívny
             self.nacasovany_smer_strechy = smer  # Uloženie smeru posunu
             self.nacasovany_cas_strechy_utc = cas_utc_str  # Uloženie času posunu ako reťazec
             self.loguj(f"Časovač strechy nastavený na {self.nacasovany_cas_strechy_utc} UTC ({self.nacasovany_smer_strechy}).")
         except ValueError:
-            QtWidgets.QMessageBox.warning(self, "Chyba", "Nesprávny formát času (HH:MM). Zadajte čas v UTC.")
+            QtWidgets.QMessageBox.warning(self, "Chyba", "Nesprávny formát času (YYYY-MM-DD HH:MM). Zadajte čas v UTC.")
 
     def skontroluj_cas_strechy(self):
         """
@@ -222,14 +222,21 @@ class MainWindow(QtWidgets.QMainWindow):
         Ak sa časy zhodujú, vykoná sa posun strechy a časovač sa deaktivuje.
         """
         if self.nacasovana_strecha_aktivna and self.nacasovany_cas_strechy_utc:
-            teraz_utc = datetime.now(pytz.utc).strftime("%H:%M")  # Získanie aktuálneho času v UTC
-            if teraz_utc == self.nacasovany_cas_strechy_utc:  # Porovnanie aktuálneho času s uloženým časom
-                self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Nastal čas (UTC) na ovládanie strechy na '{self.nacasovany_smer_strechy}'.")
-                self.ovladaj_strechu(self.nacasovany_smer_strechy)  # Vykonanie posunu strechy
-                self.nacasovana_strecha_aktivna = False  # Deaktivácia časovača
+            try:
+                nacasovany_cas_dt = datetime.strptime(self.nacasovany_cas_strechy_utc, "%Y-%m-%d %H:%M")
+                teraz_utc = datetime.now(pytz.utc)
+                if teraz_utc >= nacasovany_cas_dt:
+                    self.loguj(
+                        f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Nastal čas (UTC) na ovládanie strechy na '{self.nacasovany_smer_strechy}'.")
+                    self.ovladaj_strechu(self.nacasovany_smer_strechy)  # Vykonanie posunu strechy
+                    self.nacasovana_strecha_aktivna = False  # Deaktivácia časovača
+                    self.casovac_strechy_enable.setChecked(False)  # Deaktivácia checkboxu v GUI
+                    QtWidgets.QMessageBox.information(self, "Časovač strechy",
+                                                      f"Strecha bola presunutá na '{self.nacasovany_smer_strechy}' o {self.nacasovany_cas_strechy_utc} UTC. Časovač bol deaktivovaný.")
+            except ValueError:
+                self.loguj(f"Chyba pri kontrole času strechy: Nesprávny formát času: {self.nacasovany_cas_strechy_utc}")
+                self.nacasovana_strecha_aktivna = False  # Deaktivácia časovača pre istotu
                 self.casovac_strechy_enable.setChecked(False)  # Deaktivácia checkboxu v GUI
-                QtWidgets.QMessageBox.information(self, "Časovač strechy",
-                                                  f"Strecha bola presunutá na '{self.nacasovany_smer_strechy}' o {self.nacasovany_cas_strechy_utc} UTC. Časovač bol deaktivovaný.")
 
     def init_wake_on_lan_section(self):
         """
@@ -257,7 +264,7 @@ class MainWindow(QtWidgets.QMainWindow):
         aktualizovat_button = QtWidgets.QPushButton("Aktualizovať program")  # Vytvorenie tlačidla pre aktualizáciu
         aktualizovat_button.clicked.connect(self.aktualizuj_program)  # Pripojenie funkcie pre aktualizáciu
         layout.addWidget(aktualizovat_button, 0, 0)  # Pridanie tlačidla pre aktualizáciu do layoutu
-        group_box.setLayout(layout)  # Nastavenie layoutu pre group box
+        group_box.setLayout(layout)  # Nastavenie layoutupre group box
         self.grid_layout.addWidget(group_box, 1, 0)  # Pridanie group boxu do hlavného grid layoutu
 
         # Pridanie linkov na kamery - zobrazenie odkazov na webové kamery
