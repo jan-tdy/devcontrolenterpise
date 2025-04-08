@@ -113,10 +113,11 @@ class MainWindow(QtWidgets.QMainWindow):
         casovac_layout = QtWidgets.QGridLayout()
         self.casovac_strechy_enable = QtWidgets.QCheckBox("Aktivovať časovač")
         self.casovac_strechy_enable.stateChanged.connect(self.toggle_casovac_strechy)
-        self.casovac_strechy_smer_label = QtWidgets.QLabel("Smer (sever/juh):")
+        self.casovac_strechy_smer_label = QtWidgets.QLabel("Smer (sever/juh/both):")
         self.casovac_strechy_smer_combo = QtWidgets.QComboBox()
         self.casovac_strechy_smer_combo.addItem("sever")
         self.casovac_strechy_smer_combo.addItem("juh")
+        self.casovac_strechy_smer_combo.addItem("both")  # Option for both roofs
         self.casovac_strechy_cas_label = QtWidgets.QLabel("Čas (YYYY-MM-DD HH:MM):")
         self.casovac_strechy_cas_input = QtWidgets.QLineEdit()
         self.casovac_strechy_cas_input.setPlaceholderText("YYYY-MM-DD HH:MM")
@@ -161,32 +162,34 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def nastav_casovac_strechy(self):
         smer = self.casovac_strechy_smer_combo.currentText().lower()
-        teraz = datetime.now(pytz.utc)
-        cas_utc_str = teraz.strftime("%Y-%m-%d %H:%M")
-        self.casovac_strechy_cas_input.setText(cas_utc_str)
-        self.nacasovana_strecha_aktivna = True
-        self.nacasovany_smer_strechy = smer
-        self.nacasovany_cas_strechy_utc = cas_utc_str
-        self.loguj(f"Časovač strechy nastavený na {self.nacasovany_cas_strechy_utc} UTC ({self.nacasovany_smer_strechy}).")
+        cas_str = self.casovac_strechy_cas_input.text()
+        try:
+            nacasovany_cas_dt = datetime.strptime(cas_str, "%Y-%m-%d %H:%M")
+            self.nacasovany_cas_strechy_utc = nacasovany_cas_dt.astimezone(pytz.utc)
+            self.nacasovana_strecha_aktivna = True
+            self.nacasovany_smer_strechy = smer
+            self.loguj(f"Časovač strechy nastavený na {self.nacasovany_cas_strechy_utc} UTC ({self.nacasovany_smer_strechy}).")
+        except ValueError:
+            self.loguj(f"Nesprávny formát času: {cas_str}")
+            self.nacasovana_strecha_aktivna = False
+            self.casovac_strechy_enable.setChecked(False)
 
     def skontroluj_cas_strechy(self):
         if self.nacasovana_strecha_aktivna and self.nacasovany_cas_strechy_utc:
-            try:
-                nacasovany_cas_dt = pytz.utc.localize(datetime.strptime(self.nacasovany_cas_strechy_utc, "%Y-%m-%d %H:%M"))
-                teraz_utc = datetime.now(pytz.utc)
-                if teraz_utc >= nacasovany_cas_dt:
-                    self.loguj(
-                        f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Nastal čas (UTC) na ovládanie strechy na '{self.nacasovany_smer_strechy}'.")
+            teraz_utc = datetime.now(pytz.utc)
+            if teraz_utc >= self.nacasovany_cas_strechy_utc:
+                self.loguj(
+                    f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Nastal čas (UTC) na ovládanie strechy na '{self.nacasovany_smer_strechy}'.")
+                if self.nacasovany_smer_strechy == "both":
+                    self.ovladaj_strechu("sever")
+                    self.ovladaj_strechu("juh")
+                else:
                     self.ovladaj_strechu(self.nacasovany_smer_strechy)
-                    self.nacasovana_strecha_aktivna = False
-                    self.casovac_strechy_enable.setChecked(False)
-                    QtWidgets.QMessageBox.information(self, "Časovač strechy",
-                                                      f"Strecha bola presunutá na '{self.nacasovany_smer_strechy}' o {self.nacasovany_cas_strechy_utc} UTC. Časovač bol deaktivovaný.")
-            except ValueError:
-                self.loguj(f"Chyba pri kontrole času strechy: Nesprávny formát času: {self.nacasovany_cas_strechy_utc}")
                 self.nacasovana_strecha_aktivna = False
                 self.casovac_strechy_enable.setChecked(False)
-
+                QtWidgets.QMessageBox.information(self, "Časovač strechy",
+                                                  f"Strecha bola presunutá na '{self.nacasovany_smer_strechy}' o {self.nacasovany_cas_strechy_utc} UTC. Časovač bol deaktivovaný.")
+                
     def init_wake_on_lan_section(self):
         group_box = QtWidgets.QGroupBox("WAKE-ON-LAN")
         layout = QtWidgets.QGridLayout()
