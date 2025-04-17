@@ -142,11 +142,7 @@ class MainWindow(QtWidgets.QMainWindow):
             ("Kamera Atacama", "http://172.20.20.134"),
             ("Kamera Astrofoto", "http://172.20.20.131")
         ]):
-            lbl = QtWidgets.QLabel(
-            "Jadiv DEVCONTROL Enterprise
-for Vihorlat Observatory",
-            self
-        )
+            lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
             lbl.setOpenExternalLinks(True)
             self.grid_layout.addWidget(lbl, 1 + r, 1)
 
@@ -238,22 +234,22 @@ for Vihorlat Observatory",
 
     def aktualizuj_program(self):
         try:
-            # Download and replace the script
-            curl_cmd = (
-                f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"
-                f" -o {PROGRAM_CESTA}"
+            # Stiahnuť a nahradiť skript
+            subprocess.run(
+                ["curl -O https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"],
+                check=True
             )
-            subprocess.run(curl_cmd, shell=True, check=True)
+            subprocess.run(
+                ["bash", "-c",
+                 f"cp C14.py {PROGRAM_CESTA}"],
+                check=True
+            )
             self.loguj("Program bol úspešne aktualizovaný.")
-            # Inform user and restart application
-            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu.")
-            # Relaunch
-            subprocess.Popen([sys.executable, PROGRAM_CESTA])
-            sys.exit(0)
         except subprocess.CalledProcessError as e:
             self.loguj(f"Chyba pri aktualizácii programu: {e}")
         except Exception as e:
-            self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}")
+            self.loguj(f"Neočakávaná chyba: {e}")
+
     def loguj(self, msg):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
@@ -265,44 +261,40 @@ class SplashScreen(QtWidgets.QSplashScreen):
         super().__init__(pix)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint)
 
-        # Enhanced splash width
-        extra_width = 200
-        total_width = pix.width() + extra_width
-
-        # License text
+        # Licenčný text
         lic = QtWidgets.QLabel(
             "Licensed under the JADIV Private License v1.0 – see LICENSE file for details.",
             self
         )
         lic.setStyleSheet("color: blue; font-size: 8px;")
         lic.setAlignment(QtCore.Qt.AlignCenter)
-        lic.setGeometry(0, pix.height(), total_width, 20)
+        lic.setGeometry(0, pix.height(), pix.width(), 20)
 
-        # Title text
+        # Nadpis
         lbl = QtWidgets.QLabel(
             "Jadiv DEVCONTROL Enterprise for Vihorlat Observatory",
             self
         )
-        lbl.setStyleSheet("color: white; font-weight: bold; font-size: 14px;")
+        lbl.setStyleSheet("color: blue; font-weight: bold; font-size: 10px;")
         lbl.setAlignment(QtCore.Qt.AlignCenter)
-        lbl.setGeometry(0, pix.height() + 20, total_width, 40)
+        lbl.setGeometry(0, pix.height() + 20, pix.width(), 40)
 
         # Progress bar (fake loading)
         pr = QtWidgets.QProgressBar(self)
-        pr.setGeometry(10, pix.height() + 70, total_width - 20, 20)
+        pr.setGeometry(10, pix.height() + 70, pix.width() - 20, 20)
         pr.setRange(0, 100)
         pr.setValue(0)
         pr.setTextVisible(False)
         self.pr = pr
 
-        # Resize splash window
-        self.resize(total_width, pix.height() + 100)
+        self.resize(pix.width(), pix.height() + 100)
 
     def simulate_loading(self):
         for i in range(101):
             self.pr.setValue(i)
             QtWidgets.qApp.processEvents()
-            time.sleep(0.0)
+            time.sleep(0.04)
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     splash = SplashScreen()
