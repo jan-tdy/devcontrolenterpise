@@ -1,3 +1,4 @@
+# Licensed under the JADIV Private License v1.0 – see LICENSE file for details.
 import sys
 import subprocess
 import time
@@ -20,7 +21,6 @@ CENTRAL2_IP = "172.20.20.133"
 AZ2000_IP = "172.20.20.116"
 SSH_USER2 = "pi2"
 SSH_PASS2 = "otj0711"
-
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -90,7 +90,6 @@ class MainWindow(QtWidgets.QMainWindow):
             zasuvky_layout.addWidget(label, i, 0)
             zasuvky_layout.addWidget(zapnut_button, i, 1)
             zasuvky_layout.addWidget(vypnut_button, i, 2)
-            self.status_labels[name].setPixmap(QtGui.QPixmap("led_def.png"))
             zasuvky_layout.addWidget(self.status_labels[name], i, 3)
         zasuvky_group.setLayout(zasuvky_layout)
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
@@ -106,8 +105,15 @@ class MainWindow(QtWidgets.QMainWindow):
         strecha_group = QtWidgets.QGroupBox("Strecha")
         self.sever_button = QtWidgets.QPushButton("Sever")
         self.juh_button = QtWidgets.QPushButton("Juh")
+        self.both_button = QtWidgets.QPushButton("Both")
         self.sever_button.clicked.connect(lambda: self.ovladaj_strechu("sever"))
         self.juh_button.clicked.connect(lambda: self.ovladaj_strechu("juh"))
+        self.both_button.clicked.connect(lambda: self.ovladaj_strechu("both"))
+        strecha_layout.addWidget(self.sever_button, 0, 0)
+        strecha_layout.addWidget(self.juh_button, 0, 1)
+        strecha_layout.addWidget(self.both_button, 0, 2)
+        strecha_group.setLayout(strecha_layout)
+        layout.addWidget(strecha_group, 3, 0, 1, 3)
 
         self.casovac_strechy_group = QtWidgets.QGroupBox("Načasovať strechu")
         casovac_layout = QtWidgets.QGridLayout()
@@ -117,7 +123,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.casovac_strechy_smer_combo = QtWidgets.QComboBox()
         self.casovac_strechy_smer_combo.addItem("sever")
         self.casovac_strechy_smer_combo.addItem("juh")
-        self.casovac_strechy_smer_combo.addItem("both")  # Option for both roofs
+        self.casovac_strechy_smer_combo.addItem("both")
         self.casovac_strechy_cas_label = QtWidgets.QLabel("Čas (YYYY-MM-DD HH:MM):")
         self.casovac_strechy_cas_input = QtWidgets.QLineEdit()
         self.casovac_strechy_cas_input.setPlaceholderText("YYYY-MM-DD HH:MM")
@@ -133,10 +139,6 @@ class MainWindow(QtWidgets.QMainWindow):
         casovac_layout.addWidget(self.casovac_strechy_button, 3, 0, 1, 2)
         self.casovac_strechy_group.setLayout(casovac_layout)
 
-        strecha_layout.addWidget(self.sever_button, 0, 0)
-        strecha_layout.addWidget(self.juh_button, 0, 1)
-        strecha_group.setLayout(strecha_layout)
-        layout.addWidget(strecha_group, 3, 0, 1, 3)
         layout.addWidget(self.casovac_strechy_group, 4, 0, 1, 3)
 
         group_box.setLayout(layout)
@@ -178,18 +180,36 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.nacasovana_strecha_aktivna and self.nacasovany_cas_strechy_utc:
             teraz_utc = datetime.now(pytz.utc)
             if teraz_utc >= self.nacasovany_cas_strechy_utc:
-                self.loguj(
-                    f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Nastal čas (UTC) na ovládanie strechy na '{self.nacasovany_smer_strechy}'.")
-                if self.nacasovany_smer_strechy == "both":
-                    self.ovladaj_strechu("sever")
-                    self.ovladaj_strechu("juh")
-                else:
-                    self.ovladaj_strechu(self.nacasovany_smer_strechy)
+                self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Nastal čas (UTC) na ovládanie strechy na '{self.nacasovany_smer_strechy}'.")
+                self.ovladaj_strechu(self.nacasovany_smer_strechy)
                 self.nacasovana_strecha_aktivna = False
                 self.casovac_strechy_enable.setChecked(False)
-                QtWidgets.QMessageBox.information(self, "Časovač strechy",
-                                                  f"Strecha bola presunutá na '{self.nacasovany_smer_strechy}' o {self.nacasovany_cas_strechy_utc} UTC. Časovač bol deaktivovaný.")
-                
+                QtWidgets.QMessageBox.information(self, "Časovač strechy", f"Strecha bola presunutá na '{self.nacasovany_smer_strechy}' o {self.nacasovany_cas_strechy_utc} UTC. Časovač bol deaktivovaný.")
+
+    def ovladaj_strechu(self, strana):
+        if strana == "sever":
+            prikaz1 = "crelay -s BITFT 2 ON"
+            prikaz2 = "crelay -s BITFT 2 OFF"
+        elif strana == "juh":
+            prikaz1 = "crelay -s BITFT 1 ON"
+            prikaz2 = "crelay -s BITFT 1 OFF"
+        elif strana == "both":
+            prikaz1 = "crelay -s BITFT ALL ON"
+            prikaz2 = "crelay -s BITFT ALL OFF"
+        else:
+            self.loguj("Neplatná strana strechy.")
+            return
+
+        try:
+            subprocess.run(prikaz1, shell=True, check=True)
+            time.sleep(2)
+            subprocess.run(prikaz2, shell=True, check=True)
+            self.loguj(f"Strecha ({strana}) ovládaná.")
+        except subprocess.CalledProcessError as e:
+            self.loguj(f"Chyba pri ovládaní strechy ({strana}): {e}")
+        except FileNotFoundError:
+            self.loguj("Príkaz 'crelay' nebol nájdený.")
+
     def init_wake_on_lan_section(self):
         group_box = QtWidgets.QGroupBox("WAKE-ON-LAN")
         layout = QtWidgets.QGridLayout()
@@ -239,68 +259,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def spusti_indistarter_az2000(self):
         try:
             uvex_prikaz = f"ssh {SSH_USER2}@{AZ2000_IP} indistarter"
-            uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, text=True,
-                                                  input=f"{SSH_PASS2}\n".encode())
-            self.loguj(f"INDISTARTER na UVEX-RPi (AZ2000): {uvex_vystup.decode()}")
+            uvex_vystup = subprocess.check_output(uvex_prikaz, shell=True, text=True)
+            self.loguj(f"INDISTARTER na UVEX-RPi (AZ2000): {uvex_vystup}")
         except subprocess.CalledProcessError as e:
             self.loguj(f"Chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
         except FileNotFoundError:
             self.loguj("Príkaz 'ssh' nebol nájdený.")
-
-    def ovladaj_strechu(self, strana):
-        if strana == "sever":
-            prikaz1 = "crelay -s BITFT 2 ON"
-            prikaz2 = "crelay -s BITFT 2 OFF"
-        elif strana == "juh":
-            prikaz1 = "crelay -s BITFT 1 ON"
-            prikaz2 = "crelay -s BITFT 1 OFF"
-        else:
-            self.loguj("Neplatná strana strechy.")
-            return
-
-        try:
-            subprocess.run(prikaz1, shell=True, check=True)
-            time.sleep(2)
-            subprocess.run(prikaz2, shell=True, check=True)
-            self.loguj(f"Strecha ({strana}) ovládaná.")
-        except subprocess.CalledProcessError as e:
-            self.loguj(f"Chyba pri ovládaní strechy ({strana}): {e}")
-        except FileNotFoundError:
-            self.loguj("Príkaz 'crelay' nebol nájdený.")
-
-    def wake_on_lan(self, mac_adresa):
-        self.loguj(f"Odosielam magic packet na MAC adresu: {mac_adresa}")
-        try:
-            send_magic_packet(mac_adresa)
-        except Exception as e:
-            self.loguj(f"Chyba pri odosielaní magic packetu: {e}")
-
-    def aktualizuj_program(self):
-        try:
-            self.loguj("Aktualizujem program...")
-            prikaz_stiahnutie = f"curl -O https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/refs/heads/main/C14/C14.py"
-            subprocess.run(prikaz_stiahnutie, shell=True, check=True)
-
-            prikaz_nahradenie = f"cp C14.py {PROGRAM_CESTA}"
-            subprocess.run(prikaz_nahradenie, shell=True, check=True)
-
-            self.loguj("Program bol aktualizovaný. Zavrite toto okno a otvorte program nanovo!!!!")
-            pass
-        except subprocess.CalledProcessError as e:
-            self.loguj(f"Chyba pri aktualizácii programu: {e}")
-        except FileNotFoundError:
-            self.loguj("Príkaz 'curl' alebo 'cp' nebol nájdený.")
-        except Exception as e:
-            self.loguj(f"Neočakávaná chyba: {e}")
-
-    def loguj(self, sprava):
-        cas = QtCore.QTime.currentTime().toString()
-        self.log_box.append(f"[{cas}] {sprava}")
-        self.log_box.moveCursor(QtGui.QTextCursor.End)
-
-
-if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    hlavne_okno = MainWindow()
-    hlavne_okno.show()
-    sys.exit(app.exec_())
