@@ -1,8 +1,13 @@
 # Licensed under the JADIV Private License v1.0 – see LICENSE file for details.
 import sys
+import subprocess
+import time
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
+from wakeonlan import send_magic_packet
+from datetime import datetime
+import pytz
 
 ZASUVKY = {
     "NOUT": 4,
@@ -17,72 +22,9 @@ AZ2000_IP = "172.20.20.116"
 SSH_USER2 = "pi2"
 SSH_PASS2 = "otj0711"
 
-class SplashScreen(QtWidgets.QSplashScreen):
-    def __init__(self):
-        pix = QtGui.QPixmap("logo.png")
-        super().__init__(pix)
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint)
-
-        # License text
-        lic = QtWidgets.QLabel(
-            "Licensed under the JADIV Private License v1.0 – see LICENSE file for details.",
-            self
-        )
-        lic.setStyleSheet("color: blue; font-size: 8px;")
-        lic.setAlignment(QtCore.Qt.AlignCenter)
-        lic.setGeometry(0, pix.height(), pix.width(), 20)
-
-        # Title text
-        lbl = QtWidgets.QLabel(
-            "Jadiv DEVCONTROL Enterprise for Vihorlat Observatory",
-            self
-        )
-        lbl.setStyleSheet("color: white; font-weight: bold; font-size: 14px;")
-        lbl.setAlignment(QtCore.Qt.AlignCenter)
-        lbl.setGeometry(0, pix.height() + 20, pix.width(), 40)
-
-        # Progress bar
-        self.pr = QtWidgets.QProgressBar(self)
-        self.pr.setGeometry(10, pix.height() + 70, pix.width() - 20, 20)
-        self.pr.setRange(0, 100)
-        self.pr.setValue(0)
-        self.pr.setTextVisible(False)
-
-        # QTimer for fake loading
-        self._counter = 0
-        self._timer = QtCore.QTimer(self)
-        self._timer.timeout.connect(self._tick)
-        self._timer.start(40)  # ~4 seconds total
-
-        self.resize(pix.width(), pix.height() + 100)
-
-    def _tick(self):
-        self._counter += 1
-        self.pr.setValue(self._counter)
-        if self._counter >= 100:
-            self._timer.stop()
-            self._finish()
-
-    def _finish(self):
-        # Lazy imports for main functionality
-        import subprocess
-        from wakeonlan import send_magic_packet
-        from datetime import datetime
-        import pytz
-
-        # Show main window
-        self.main = MainWindow(subprocess, send_magic_packet, datetime, pytz)
-        self.main.show()
-        self.finish(self.main)
-
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, subprocess, send_magic_packet, datetime, pytz):
+    def __init__(self):
         super().__init__()
-        self.subprocess = subprocess
-        self.send_magic_packet = send_magic_packet
-        self.datetime = datetime
-        self.pytz = pytz
-
         self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 02")
         self.setGeometry(100, 100, 800, 600)
 
@@ -179,21 +121,188 @@ class MainWindow(QtWidgets.QMainWindow):
         self.c_time = None
 
     def init_wake_on_lan_section(self):
-        group_box = QtWidgets.QGroupBox("WAKE-ON-LAN")
-        layout = QtWidgets.QGridLayout(group_box)
-        az2000 = QtWidgets.QPushButton("Zapni AZ2000")
-        gm3000 = QtWidgets.QPushButton("Zapni GM3000")
-        az2000.clicked.connect(lambda: self.wake_on_lan("00:c0:08:a9:c2:32"))
-        gm3000.clicked.connect(lambda: self.wake_on_lan("00:c0:08:aa:35:12"))
-        layout.addWidget(az2000, 0, 0)
-        layout.addWidget(gm3000, 0, 1)
-        self.grid_layout.addWidget(group_box, 0, 1)
+        box = QtWidgets.QGroupBox("WAKE-ON-LAN")
+        lay = QtWidgets.QGridLayout(box)
+        z1 = QtWidgets.QPushButton("Zapni AZ2000")
+        z2 = QtWidgets.QPushButton("Zapni GM3000")
+        z1.clicked.connect(lambda: self.wake_on_lan("00:c0:08:a9:c2:32"))
+        z2.clicked.connect(lambda: self.wake_on_lan("00:c0:08:aa:35:12"))
+        lay.addWidget(z1, 0, 0)
+        lay.addWidget(z2, 0, 1)
+        self.grid_layout.addWidget(box, 0, 1)
 
     def init_ota_section(self):
-        group_box = QtWidgets.QGroupBox("OTA Aktualizácie")
-        layout = QtWidgets.QGridLayout(group_box)
-        aktualizovat = QtWidgets.QPushButton("Aktualizovať program")
-        aktualizovat.clicked.connect(self.aktualizuj_program)
-        layout.addWidget(aktualizovat, 0, 0)
-        self.grid_layout.addWidget(group_box, 1, 0)
-        kamera_atacama = QtWidgets.QLabel("<a href='http://172.20.20.134'>Kamera Atacam
+        box = QtWidgets.QGroupBox("OTA Aktualizácie")
+        lay = QtWidgets.QGridLayout(box)
+        but = QtWidgets.QPushButton("Aktualizovať program")
+        but.clicked.connect(self.aktualizuj_program)
+        lay.addWidget(but, 0, 0)
+        self.grid_layout.addWidget(box, 1, 0)
+        for r, (txt, url) in enumerate([
+            ("Kamera Atacama", "http://172.20.20.134"),
+            ("Kamera Astrofoto", "http://172.20.20.131")
+        ]):
+            lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
+            lbl.setOpenExternalLinks(True)
+            self.grid_layout.addWidget(lbl, 1 + r, 1)
+
+    def aktualizuj_stav_zasuviek(self):
+        self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
+        for n, c in ZASUVKY.items():
+            self.zisti_stav_zasuvky(c, n)
+
+    def zisti_stav_zasuvky(self, cis, lab):
+        try:
+            out = subprocess.check_output(f"sispmctl -nqg {cis}", shell=True, text=True).strip()
+            pix = (
+                "led_green.png" if out == "1" else
+                "led_red.png" if out == "0" else
+                "led_def.png"
+            )
+            self.status_labels[lab].setPixmap(QtGui.QPixmap(pix))
+        except:
+            self.status_labels[lab].setPixmap(QtGui.QPixmap("led_def.png"))
+
+    def ovladaj_zasuvku(self, cis, on, lab):
+        cmd = f"sispmctl -{'o' if on else 'f'} {cis}"
+        try:
+            out = subprocess.check_output(cmd, shell=True)
+            self.loguj(out.decode())
+        except Exception as e:
+            self.loguj(f"Chyba: {e}")
+        self.zisti_stav_zasuvky(cis, lab)
+
+    def spusti_indistarter_c14(self):
+        try:
+            out = subprocess.check_output("indistarter", shell=True)
+            self.loguj(out.decode())
+        except:
+            self.loguj("Chyba spustenia INDISTARTER C14")
+
+    def spusti_indistarter_az2000(self):
+        try:
+            out = subprocess.check_output(f"ssh {SSH_USER2}@{AZ2000_IP} indistarter", shell=True)
+            self.loguj(out.decode())
+        except:
+            self.loguj("Chyba INDISTARTER AZ2000")
+
+    def ovladaj_strechu(self, s):
+        if s == "sever":
+            p1, p2 = "crelay -s BITFT 2 ON", "crelay -s BITFT 2 OFF"
+        elif s == "juh":
+            p1, p2 = "crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF"
+        elif s == "both":
+            p1, p2 = "crelay -s BITFT ALL ON", "crelay -s BITFT ALL OFF"
+        else:
+            return
+        try:
+            subprocess.run(p1, shell=True, check=True)
+            time.sleep(2)
+            subprocess.run(p2, shell=True, check=True)
+        except:
+            self.loguj(f"Chyba strecha {s}")
+
+    def toggle_casovac_strechy(self, st):
+        e = (st == QtCore.Qt.Checked)
+        self.cas_smer.setEnabled(e)
+        self.cas_input.setEnabled(e)
+        self.cas_btn.setEnabled(e)
+        if not e:
+            self.c_act = False
+
+    def nastav_casovac_strechy(self):
+        try:
+            dt = datetime.strptime(self.cas_input.text(), "%Y-%m-%d %H:%M").astimezone(pytz.utc)
+            self.c_act = True
+            self.c_smer = self.cas_smer.currentText()
+            self.c_time = dt
+        except:
+            self.loguj("Chybný formát času")
+
+    def skontroluj_cas_strechy(self):
+        if self.c_act and datetime.now(pytz.utc) >= self.c_time:
+            self.ovladaj_strechu(self.c_smer)
+            self.c_act = False
+            self.loguj("Strecha aktivovaná časovačom")
+
+    def wake_on_lan(self, mac):
+        try:
+            send_magic_packet(mac)
+            self.loguj(f"WOL na {mac}")
+        except:
+            self.loguj("Chyba WOL")
+
+    def aktualizuj_program(self):
+        try:
+            # Download and replace the script
+            curl_cmd = (
+                f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"
+                f" -o {PROGRAM_CESTA}"
+            )
+            subprocess.run(curl_cmd, shell=True, check=True)
+            self.loguj("Program bol úspešne aktualizovaný.")
+            # Inform user and restart application
+            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu po zavretí tohto dialógu, ak nebude úspech naštartujte aplikáciu manuálne.")
+            # Relaunch
+            subprocess.Popen([sys.executable, PROGRAM_CESTA])
+            sys.exit(0)
+        except subprocess.CalledProcessError as e:
+            self.loguj(f"Chyba pri aktualizácii programu: {e}")
+        except Exception as e:
+            self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}")
+    def loguj(self, msg):
+        t = QtCore.QTime.currentTime().toString()
+        self.log_box.append(f"[{t}] {msg}")
+        self.log_box.moveCursor(QtGui.QTextCursor.End)
+
+class SplashScreen(QtWidgets.QSplashScreen):
+    def __init__(self):
+        pix = QtGui.QPixmap("logo.png")
+        super().__init__(pix)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint)
+
+        # Licenčný text
+        lic = QtWidgets.QLabel(
+            "Licensed under the JADIV Private License v1.0 – see LICENSE file for details.",
+            self
+        )
+        lic.setStyleSheet("color: blue; font-size: 8px;")
+        lic.setAlignment(QtCore.Qt.AlignCenter)
+        lic.setGeometry(0, pix.height(), pix.width(), 20)
+
+        # Nadpis
+        lbl = QtWidgets.QLabel(
+            "Jadiv DEVCONTROL Enterprise for Vihorlat Observatory",
+            self
+        )
+        lbl.setStyleSheet("color: blue; font-weight: bold; font-size: 10px;")
+        lbl.setAlignment(QtCore.Qt.AlignCenter)
+        lbl.setGeometry(0, pix.height() + 20, pix.width(), 40)
+
+        # Progress bar (fake loading)
+        pr = QtWidgets.QProgressBar(self)
+        pr.setGeometry(10, pix.height() + 70, pix.width() - 20, 20)
+        pr.setRange(0, 100)
+        pr.setValue(0)
+        pr.setTextVisible(False)
+        self.pr = pr
+
+        self.resize(pix.width(), pix.height() + 100)
+
+    def simulate_loading(self):
+        for i in range(101):
+            self.pr.setValue(i)
+            QtWidgets.qApp.processEvents()
+            time.sleep(0.02)
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    splash = SplashScreen()
+    splash.show()
+    QtWidgets.qApp.processEvents()
+    splash.simulate_loading()
+
+    window = MainWindow()
+    window.show()
+    splash.finish(window)
+    sys.exit(app.exec_())
