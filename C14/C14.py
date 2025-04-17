@@ -73,6 +73,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for name in ZASUVKY:
                 self.status_labels[name].setPixmap(QtGui.QPixmap("led_def.png"))
 
+
     def init_atacama_section(self):
         group_box = QtWidgets.QGroupBox("ATACAMA")
         layout = QtWidgets.QGridLayout()
@@ -265,9 +266,50 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loguj(f"Chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
         except FileNotFoundError:
             self.loguj("Príkaz 'ssh' nebol nájdený.")
-            
+
+class SplashScreen(QtWidgets.QSplashScreen):
+    def __init__(self):
+        pixmap = QtGui.QPixmap("logo.png")
+        super().__init__(pixmap)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint)
+
+        self.label = QtWidgets.QLabel(self)
+        self.label.setText("Jadiv DEVCONTROL Enterprise\nfor Vihorlat Observatory")
+        self.label.setStyleSheet("color: white; font-size: 16px; font-weight: bold;")
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        self.label.setGeometry(0, pixmap.height(), pixmap.width(), 40)
+
+        self.spinner = QtWidgets.QLabel(self)
+        movie = QtGui.QMovie("spinner.gif")  # zelený načítavací krúžok ako gif
+        movie.setScaledSize(QtCore.QSize(32, 32))
+        self.spinner.setMovie(movie)
+        self.spinner.setGeometry((pixmap.width() - 32) // 2, pixmap.height() + 40, 32, 32)
+        movie.start()
+
+        self.progress = QtWidgets.QProgressBar(self)
+        self.progress.setGeometry(10, pixmap.height() + 80, pixmap.width() - 20, 20)
+        self.progress.setRange(0, 100)
+        self.progress.setValue(0)
+        self.progress.setTextVisible(False)
+
+        self.resize(pixmap.width(), pixmap.height() + 110)
+
+    def simulate_loading(self):
+        for i in range(101):
+            self.progress.setValue(i)
+            QtWidgets.qApp.processEvents()
+            time.sleep(0.05)
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+    splash = SplashScreen()
+    splash.show()
+    QtWidgets.qApp.processEvents()
+
+    splash.simulate_loading()
+
     window = MainWindow()
     window.show()
+    splash.finish(window)
+
     sys.exit(app.exec_())
