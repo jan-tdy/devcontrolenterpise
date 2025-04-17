@@ -265,3 +265,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loguj(f"Chyba pri spúšťaní INDISTARTERA na UVEX-RPi (AZ2000): {e}")
         except FileNotFoundError:
             self.loguj("Príkaz 'ssh' nebol nájdený.")
+            
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
