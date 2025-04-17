@@ -293,7 +293,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         for i in range(101):
             self.pr.setValue(i)
             QtWidgets.qApp.processEvents()
-            time.sleep(0.02)
+            time.sleep(0.010)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
