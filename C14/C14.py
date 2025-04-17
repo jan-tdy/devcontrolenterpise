@@ -262,40 +262,45 @@ class SplashScreen(QtWidgets.QSplashScreen):
         super().__init__(pix)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint)
 
-        # Licenčný text
+        # Enhanced splash width
+        extra_width = 200
+        total_width = pix.width() + extra_width
+
+        # License text
         lic = QtWidgets.QLabel(
             "Licensed under the JADIV Private License v1.0 – see LICENSE file for details.",
             self
         )
         lic.setStyleSheet("color: blue; font-size: 8px;")
         lic.setAlignment(QtCore.Qt.AlignCenter)
-        lic.setGeometry(0, pix.height(), pix.width(), 20)
+        lic.setGeometry(0, pix.height(), total_width, 20)
 
-        # Nadpis
+        # Title text
         lbl = QtWidgets.QLabel(
-            "Jadiv DEVCONTROL Enterprise\nfor Vihorlat Observatory",
+            "Jadiv DEVCONTROL Enterprise
+for Vihorlat Observatory",
             self
         )
         lbl.setStyleSheet("color: white; font-weight: bold; font-size: 14px;")
         lbl.setAlignment(QtCore.Qt.AlignCenter)
-        lbl.setGeometry(0, pix.height() + 20, pix.width(), 40)
+        lbl.setGeometry(0, pix.height() + 20, total_width, 40)
 
         # Progress bar (fake loading)
         pr = QtWidgets.QProgressBar(self)
-        pr.setGeometry(10, pix.height() + 70, pix.width() - 20, 20)
+        pr.setGeometry(10, pix.height() + 70, total_width - 20, 20)
         pr.setRange(0, 100)
         pr.setValue(0)
         pr.setTextVisible(False)
         self.pr = pr
 
-        self.resize(pix.width(), pix.height() + 100)
+        # Resize splash window
+        self.resize(total_width, pix.height() + 100)
 
     def simulate_loading(self):
         for i in range(101):
             self.pr.setValue(i)
             QtWidgets.qApp.processEvents()
-            time.sleep(0.04)
-
+            time.sleep(0.0)
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     splash = SplashScreen()
