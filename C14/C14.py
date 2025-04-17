@@ -49,7 +49,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_atacama_section(self):
         group_box = QtWidgets.QGroupBox("ATACAMA")
-        layout = QtWidgets.QGridLayout()
+        layout = QtWidgets.QGridLayout(group_box)
 
         # Zásuvky
         zasuvky_group = QtWidgets.QGroupBox("Zásuvky")
@@ -96,133 +96,222 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cas_enable = QtWidgets.QCheckBox("Aktivovať časovač")
         self.cas_enable.stateChanged.connect(self.toggle_casovac_strechy)
         self.cas_smer = QtWidgets.QComboBox()
-        self.cas_smer.addItems(["sever","juh","both"])
+        self.cas_smer.addItems(["sever", "juh", "both"])
         self.cas_input = QtWidgets.QLineEdit()
         self.cas_input.setPlaceholderText("YYYY-MM-DD HH:MM")
         self.cas_btn = QtWidgets.QPushButton("Nastaviť časovač")
         self.cas_btn.clicked.connect(self.nastav_casovac_strechy)
         self.cas_btn.setEnabled(False)
-        cas_layout.addWidget(self.cas_enable,0,0,1,2)
-        cas_layout.addWidget(QtWidgets.QLabel("Smer:"),1,0)
-        cas_layout.addWidget(self.cas_smer,1,1)
-        cas_layout.addWidget(QtWidgets.QLabel("Čas:"),2,0)
-        cas_layout.addWidget(self.cas_input,2,1)
-        cas_layout.addWidget(self.cas_btn,3,0,1,2)
-        layout.addWidget(cas_group,4,0,1,3)
+        cas_layout.addWidget(self.cas_enable, 0, 0, 1, 2)
+        cas_layout.addWidget(QtWidgets.QLabel("Smer:"), 1, 0)
+        cas_layout.addWidget(self.cas_smer, 1, 1)
+        cas_layout.addWidget(QtWidgets.QLabel("Čas:"), 2, 0)
+        cas_layout.addWidget(self.cas_input, 2, 1)
+        cas_layout.addWidget(self.cas_btn, 3, 0, 1, 2)
+        layout.addWidget(cas_group, 4, 0, 1, 3)
 
-        group_box.setLayout(layout)
-        self.grid_layout.addWidget(group_box,0,0)
+        self.grid_layout.addWidget(group_box, 0, 0)
 
         # Timer strechy
         self.timer_strecha = QtCore.QTimer()
         self.timer_strecha.timeout.connect(self.skontroluj_cas_strechy)
-        self.timer_strecha.start(60*1000)
-        self.c_act=False;self.c_smer=None;self.c_time=None
+        self.timer_strecha.start(60 * 1000)
+        self.c_act = False
+        self.c_smer = None
+        self.c_time = None
 
     def init_wake_on_lan_section(self):
-        box=QtWidgets.QGroupBox("WAKE-ON-LAN")
-        lay=QtWidgets.QGridLayout(box)
-        z1=QtWidgets.QPushButton("Zapni AZ2000")
-        z2=QtWidgets.QPushButton("Zapni GM3000")
+        box = QtWidgets.QGroupBox("WAKE-ON-LAN")
+        lay = QtWidgets.QGridLayout(box)
+        z1 = QtWidgets.QPushButton("Zapni AZ2000")
+        z2 = QtWidgets.QPushButton("Zapni GM3000")
         z1.clicked.connect(lambda: self.wake_on_lan("00:c0:08:a9:c2:32"))
         z2.clicked.connect(lambda: self.wake_on_lan("00:c0:08:aa:35:12"))
-        lay.addWidget(z1,0,0);lay.addWidget(z2,0,1)
-        self.grid_layout.addWidget(box,0,1)
+        lay.addWidget(z1, 0, 0)
+        lay.addWidget(z2, 0, 1)
+        self.grid_layout.addWidget(box, 0, 1)
 
     def init_ota_section(self):
-        box=QtWidgets.QGroupBox("OTA Aktualizácie")
-        lay=QtWidgets.QGridLayout(box)
-        but=QtWidgets.QPushButton("Aktualizovať program")
+        box = QtWidgets.QGroupBox("OTA Aktualizácie")
+        lay = QtWidgets.QGridLayout(box)
+        but = QtWidgets.QPushButton("Aktualizovať program")
         but.clicked.connect(self.aktualizuj_program)
-        lay.addWidget(but,0,0)
-        self.grid_layout.addWidget(box,1,0)
-        for r,(txt,url) in enumerate([("Kamera Atacama","http://172.20.20.134"),("Kamera Astrofoto","http://172.20.20.131")]):
-            lbl=QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
+        lay.addWidget(but, 0, 0)
+        self.grid_layout.addWidget(box, 1, 0)
+        for r, (txt, url) in enumerate([
+            ("Kamera Atacama", "http://172.20.20.134"),
+            ("Kamera Astrofoto", "http://172.20.20.131")
+        ]):
+            lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
             lbl.setOpenExternalLinks(True)
-            self.grid_layout.addWidget(lbl,1+r,1)
+            self.grid_layout.addWidget(lbl, 1 + r, 1)
 
     def aktualizuj_stav_zasuviek(self):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
-        for n,c in ZASUVKY.items():self.zisti_stav_zasuvky(c,n)
+        for n, c in ZASUVKY.items():
+            self.zisti_stav_zasuvky(c, n)
 
-    def zisti_stav_zasuvky(self,cis,lab):
+    def zisti_stav_zasuvky(self, cis, lab):
         try:
-            out=subprocess.check_output(f"sispmctl -nqg {cis}",shell=True,text=True).strip()
-            pix="led_green.png" if out=="1" else "led_red.png" if out=="0" else "led_def.png"
+            out = subprocess.check_output(f"sispmctl -nqg {cis}", shell=True, text=True).strip()
+            pix = (
+                "led_green.png" if out == "1" else
+                "led_red.png" if out == "0" else
+                "led_def.png"
+            )
             self.status_labels[lab].setPixmap(QtGui.QPixmap(pix))
         except:
             self.status_labels[lab].setPixmap(QtGui.QPixmap("led_def.png"))
 
-    def ovladaj_zasuvku(self,cis,on,lab):
-        cmd=f"sispmctl -{'o' if on else 'f'} {cis}"
+    def ovladaj_zasuvku(self, cis, on, lab):
+        cmd = f"sispmctl -{'o' if on else 'f'} {cis}"
         try:
-            out=subprocess.check_output(cmd,shell=True)
+            out = subprocess.check_output(cmd, shell=True)
             self.loguj(out.decode())
         except Exception as e:
             self.loguj(f"Chyba: {e}")
-        self.zisti_stav_zasuvky(cis,lab)
+        self.zisti_stav_zasuvky(cis, lab)
 
     def spusti_indistarter_c14(self):
-        try:out=subprocess.check_output("indistarter",shell=True);self.loguj(out.decode())
-        except: self.loguj("Chyba spustenia INDISTARTER C14")
+        try:
+            out = subprocess.check_output("indistarter", shell=True)
+            self.loguj(out.decode())
+        except:
+            self.loguj("Chyba spustenia INDISTARTER C14")
+
     def spusti_indistarter_az2000(self):
-        try:out=subprocess.check_output(f"ssh {SSH_USER2}@{AZ2000_IP} indistarter",shell=True);self.loguj(out.decode())
-        except: self.loguj("Chyba INDISTARTER AZ2000")
+        try:
+            out = subprocess.check_output(f"ssh {SSH_USER2}@{AZ2000_IP} indistarter", shell=True)
+            self.loguj(out.decode())
+        except:
+            self.loguj("Chyba INDISTARTER AZ2000")
 
-    def ovladaj_strechu(self,s):
-        if s=="sever":p1,p2="crelay -s BITFT 2 ON","crelay -s BITFT 2 OFF"
-        elif s=="juh":p1,p2="crelay -s BITFT 1 ON","crelay -s BITFT 1 OFF"
-        elif s=="both":p1,p2="crelay -s BITFT ALL ON","crelay -s BITFT ALL OFF"
-        else:return
-        try:subprocess.run(p1,shell=True,check=True);time.sleep(2);subprocess.run(p2,shell=True,check=True)
-        except: self.loguj(f"Chyba strecha {s}")
+    def ovladaj_strechu(self, s):
+        if s == "sever":
+            p1, p2 = "crelay -s BITFT 2 ON", "crelay -s BITFT 2 OFF"
+        elif s == "juh":
+            p1, p2 = "crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF"
+        elif s == "both":
+            p1, p2 = "crelay -s BITFT ALL ON", "crelay -s BITFT ALL OFF"
+        else:
+            return
+        try:
+            subprocess.run(p1, shell=True, check=True)
+            time.sleep(2)
+            subprocess.run(p2, shell=True, check=True)
+        except:
+            self.loguj(f"Chyba strecha {s}")
 
-    def toggle_casovac_strechy(self,st):
-        e=(st==QtCore.Qt.Checked)
-        self.cas_smer.setEnabled(e);self.cas_input.setEnabled(e);self.cas_btn.setEnabled(e)
-        if not e:self.c_act=False
+    def toggle_casovac_strechy(self, st):
+        e = (st == QtCore.Qt.Checked)
+        self.cas_smer.setEnabled(e)
+        self.cas_input.setEnabled(e)
+        self.cas_btn.setEnabled(e)
+        if not e:
+            self.c_act = False
 
     def nastav_casovac_strechy(self):
         try:
-            dt=datetime.strptime(self.cas_input.text(),"%Y-%m-%d %H:%M").astimezone(pytz.utc)
-            self.c_act=True;self.c_smer=self.cas_smer.currentText();self.c_time=dt
-        except: self.loguj("Chybny format casu")
+            dt = datetime.strptime(self.cas_input.text(), "%Y-%m-%d %H:%M").astimezone(pytz.utc)
+            self.c_act = True
+            self.c_smer = self.cas_smer.currentText()
+            self.c_time = dt
+        except:
+            self.loguj("Chybný formát času")
 
     def skontroluj_cas_strechy(self):
-        if self.c_act and datetime.now(pytz.utc)>=self.c_time:
+        if self.c_act and datetime.now(pytz.utc) >= self.c_time:
             self.ovladaj_strechu(self.c_smer)
-            self.c_act=False
-            self.loguj("Strecha aktivovana casovacom")
+            self.c_act = False
+            self.loguj("Strecha aktivovaná časovačom")
 
-    def wake_on_lan(self,mac):
-        try:send_magic_packet(mac);self.loguj(f"WOL na {mac}")
-        except: self.loguj("Chyba WOL")
+    def wake_on_lan(self, mac):
+        try:
+            send_magic_packet(mac)
+            self.loguj(f"WOL na {mac}")
+        except:
+            self.loguj("Chyba WOL")
 
     def aktualizuj_program(self):
-        try:subprocess.run(f"curl -O https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/refs/heads/main/C14/C14.py",shell=True,check=True);subprocess.run(f"cp C14.py {PROGRAM_CESTA}",shell=True,check=True);self.loguj("Update hotovy")
-        except: self.loguj("Chyba update")
+        try:
+            # Stiahnuť a nahradiť skript
+            subprocess.run(
+                ["bash", "-c",
+                 f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py -o C14.py"],
+                check=True
+            )
+            subprocess.run(
+                ["bash", "-c",
+                 f"cp C14.py {PROGRAM_CESTA}"],
+                check=True
+            )
+            self.loguj("Program bol úspešne aktualizovaný.")
+        except subprocess.CalledProcessError as e:
+            self.loguj(f"Chyba pri aktualizácii programu: {e}")
+        except Exception as e:
+            self.loguj(f"Neočakávaná chyba: {e}")
 
-    def loguj(self,msg):
-        t=QtCore.QTime.currentTime().toString()
+    def loguj(self, msg):
+        t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
         self.log_box.moveCursor(QtGui.QTextCursor.End)
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
-        pix=QtGui.QPixmap("logo.png")
+        pix = QtGui.QPixmap("logo.png")
         super().__init__(pix)
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint|QtCore.Qt.FramelessWindowHint)
-        lbl=QtWidgets.QLabel("Jadiv DEVCONTROL Enterprise\nfor Vihorlat Observatory",self)
-        lbl.setStyleSheet("color:white;font-weight:bold;")
-        lbl.setAlignment(QtCore.Qt.AlignCenter);lbl.setGeometry(0,pix.height(),pix.width(),40)
-        sp=QtWidgets.QLabel(self);mov=QtGui.QMovie("spinner.gif");mov.setScaledSize(QtCore.QSize(32,32));sp.setMovie(mov);sp.setGeometry((pix.width()-32)//2,pix.height()+40,32,32);mov.start()
-        pr=QtWidgets.QProgressBar(self);pr.setGeometry(10,pix.height()+80,pix.width()-20,20);pr.setRange(0,100);pr.setValue(0);pr.setTextVisible(False)
-        self.pr=pr;self.resize(pix.width(),pix.height()+110)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore(QtCore.Qt.FramelessWindowHint))
+
+        # Licenčný text
+        lic = QtWidgets.QLabel(
+            "Licensed under the JADIV Private License v1.0 – see LICENSE file for details.",
+            self
+        )
+        lic.setStyleSheet("color: blue; font-size: 8px;")
+        lic.setAlignment(QtCore.Qt.AlignCenter)
+        lic.setGeometry(0, pix.height(), pix.width(), 20)
+
+        # Nadpis
+        lbl = QtWidgets.QLabel(
+            "Jadiv DEVCONTROL Enterprise\nfor Vihorlat Observatory",
+            self
+        )
+        lbl.setStyleSheet("color: blue; font-weight: bold;")
+        lbl.setAlignment(QtCore.Qt.AlignCenter)
+        lbl.setGeometry(0, pix.height() + 20, pix.width(), 40)
+
+        # Spinner
+        sp = QtWidgets.QLabel(self)
+        mov = QtGui.QMovie("spinner.gif")
+        mov.setScaledSize(QtCore.QSize(32, 32))
+        sp.setMovie(mov)
+        sp.setGeometry((pix.width() - 32) // 2, pix.height() + 60, 32, 32)
+        mov.start()
+
+        # Progress bar
+        pr = QtWidgets.QProgressBar(self)
+        pr.setGeometry(10, pix.height() + 100, pix.width() - 20, 20)
+        pr.setRange(0, 100)
+        pr.setValue(0)
+        pr.setTextVisible(False)
+        self.pr = pr
+
+        self.resize(pix.width(), pix.height() + 130)
+
     def simulate_loading(self):
         for i in range(101):
-            self.pr.setValue(i);QtWidgets.qApp.processEvents();time.sleep(0.04)
+            self.pr.setValue(i)
+            QtWidgets.qApp.processEvents()
+            time.sleep(0.04)
 
-if __name__=="__main__":
-    app=QtWidgets.QApplication(sys.argv)
-    splash=SplashScreen();splash.show();QtWidgets.qApp.processEvents();splash.simulate_loading()
-    win=MainWindow();win.show();splash.finish(win);sys.exit(app.exec_())
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    splash = SplashScreen()
+    splash.show()
+    QtWidgets.qApp.processEvents()
+    splash.simulate_loading()
+
+    window = MainWindow()
+    window.show()
+    splash.finish(window)
+    sys.exit(app.exec_())
