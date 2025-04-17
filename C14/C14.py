@@ -260,7 +260,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
         pix = QtGui.QPixmap("logo.png")
         super().__init__(pix)
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore(QtCore.Qt.FramelessWindowHint))
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint)
 
         # Licenčný text
         lic = QtWidgets.QLabel(
@@ -273,30 +273,23 @@ class SplashScreen(QtWidgets.QSplashScreen):
 
         # Nadpis
         lbl = QtWidgets.QLabel(
-            "Jadiv DEVCONTROL Enterprise\nfor Vihorlat Observatory",
+            "Jadiv DEVCONTROL Enterprise
+for Vihorlat Observatory",
             self
         )
-        lbl.setStyleSheet("color: blue; font-weight: bold;")
+        lbl.setStyleSheet("color: white; font-weight: bold; font-size: 14px;")
         lbl.setAlignment(QtCore.Qt.AlignCenter)
         lbl.setGeometry(0, pix.height() + 20, pix.width(), 40)
 
-        # Spinner
-        sp = QtWidgets.QLabel(self)
-        mov = QtGui.QMovie("spinner.gif")
-        mov.setScaledSize(QtCore.QSize(32, 32))
-        sp.setMovie(mov)
-        sp.setGeometry((pix.width() - 32) // 2, pix.height() + 60, 32, 32)
-        mov.start()
-
-        # Progress bar
+        # Progress bar (fake loading)
         pr = QtWidgets.QProgressBar(self)
-        pr.setGeometry(10, pix.height() + 100, pix.width() - 20, 20)
+        pr.setGeometry(10, pix.height() + 70, pix.width() - 20, 20)
         pr.setRange(0, 100)
         pr.setValue(0)
         pr.setTextVisible(False)
         self.pr = pr
 
-        self.resize(pix.width(), pix.height() + 130)
+        self.resize(pix.width(), pix.height() + 100)
 
     def simulate_loading(self):
         for i in range(101):
