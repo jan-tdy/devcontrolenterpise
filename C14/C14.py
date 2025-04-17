@@ -234,22 +234,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def aktualizuj_program(self):
         try:
-            # Stiahnuť a nahradiť skript
-            subprocess.run(
-                ["curl -O https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"],
-                check=True
+            # Download and replace the script
+            curl_cmd = (
+                f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"
+                f" -o {PROGRAM_CESTA}"
             )
-            subprocess.run(
-                ["bash", "-c",
-                 f"cp C14.py {PROGRAM_CESTA}"],
-                check=True
-            )
+            subprocess.run(curl_cmd, shell=True, check=True)
             self.loguj("Program bol úspešne aktualizovaný.")
+            # Inform user and restart application
+            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu po zavretí tohto dialógu, ak nebude úspech naštartujte aplikáciu manuálne.")
+            # Relaunch
+            subprocess.Popen([sys.executable, PROGRAM_CESTA])
+            sys.exit(0)
         except subprocess.CalledProcessError as e:
             self.loguj(f"Chyba pri aktualizácii programu: {e}")
         except Exception as e:
-            self.loguj(f"Neočakávaná chyba: {e}")
-
+            self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}")
     def loguj(self, msg):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
@@ -293,7 +293,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         for i in range(101):
             self.pr.setValue(i)
             QtWidgets.qApp.processEvents()
-            time.sleep(0.04)
+            time.sleep(0.08)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
