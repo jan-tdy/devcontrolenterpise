@@ -142,7 +142,11 @@ class MainWindow(QtWidgets.QMainWindow):
             ("Kamera Atacama", "http://172.20.20.134"),
             ("Kamera Astrofoto", "http://172.20.20.131")
         ]):
-            lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
+            lbl = QtWidgets.QLabel(
+            "Jadiv DEVCONTROL Enterprise
+for Vihorlat Observatory",
+            self
+        )
             lbl.setOpenExternalLinks(True)
             self.grid_layout.addWidget(lbl, 1 + r, 1)
 
@@ -234,23 +238,22 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def aktualizuj_program(self):
         try:
-            # Stiahnuť a nahradiť skript
-            subprocess.run(
-                ["bash", "-c",
-                 f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py -o C14.py"],
-                check=True
+            # Download and replace the script
+            curl_cmd = (
+                f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"
+                f" -o {PROGRAM_CESTA}"
             )
-            subprocess.run(
-                ["bash", "-c",
-                 f"cp C14.py {PROGRAM_CESTA}"],
-                check=True
-            )
+            subprocess.run(curl_cmd, shell=True, check=True)
             self.loguj("Program bol úspešne aktualizovaný.")
+            # Inform user and restart application
+            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu.")
+            # Relaunch
+            subprocess.Popen([sys.executable, PROGRAM_CESTA])
+            sys.exit(0)
         except subprocess.CalledProcessError as e:
             self.loguj(f"Chyba pri aktualizácii programu: {e}")
         except Exception as e:
-            self.loguj(f"Neočakávaná chyba: {e}")
-
+            self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}")
     def loguj(self, msg):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
@@ -277,8 +280,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
 
         # Title text
         lbl = QtWidgets.QLabel(
-            "Jadiv DEVCONTROL Enterprise
-for Vihorlat Observatory",
+            "Jadiv DEVCONTROL Enterprise for Vihorlat Observatory",
             self
         )
         lbl.setStyleSheet("color: white; font-weight: bold; font-size: 14px;")
