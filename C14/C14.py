@@ -273,8 +273,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
 
         # Nadpis
         lbl = QtWidgets.QLabel(
-            "Jadiv DEVCONTROL Enterprise
-for Vihorlat Observatory",
+            "Jadiv DEVCONTROL Enterprise\nfor Vihorlat Observatory",
             self
         )
         lbl.setStyleSheet("color: white; font-weight: bold; font-size: 14px;")
