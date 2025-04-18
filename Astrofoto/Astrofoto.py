@@ -234,22 +234,32 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def aktualizuj_program(self):
         try:
-            # Download and replace the script
-            curl_cmd = (
-                f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/Astrofoto/Astrofoto.py"
-                f" -o {PROGRAM_CESTA}"
-            )
-            subprocess.run(curl_cmd, shell=True, check=True)
+            # Execute the update script
+            update_script = "./home/dpv/j44softapps-socketcontrol/update_astrofoto.sh"
+            subprocess.run([update_script], check=True)
             self.loguj("Program bol úspešne aktualizovaný.")
+            
             # Inform user and restart application
-            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu po zavretí tohto dialógu, ak nebude úspech naštartujte aplikáciu manuálne.")
+            QtWidgets.QMessageBox.information(
+                self, 
+                "OTA Aktualizácia", 
+                "Program bol aktualizovaný. Reštartujem aplikáciu po zavretí tohto dialógu, ak nebude úspech naštartujte aplikáciu manuálne."
+            )
+            
             # Relaunch
             subprocess.Popen([sys.executable, PROGRAM_CESTA])
             sys.exit(0)
+    
         except subprocess.CalledProcessError as e:
             self.loguj(f"Chyba pri aktualizácii programu: {e}")
+    
         except Exception as e:
             self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}")
+
+def loguj(self, msg):
+    t = QtCore.QTime.currentTime().toString()
+    self.log_box.append(f"[{t}] {msg}")
+    self.log_box.moveCursor(QtGui.QTextCursor.End)
     def loguj(self, msg):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
