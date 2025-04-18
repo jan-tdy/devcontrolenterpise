@@ -1,38 +1,30 @@
 #!/bin/bash
 
-echo "📦 Vitajte v programe na nastavenie desktop launcherov!"
+echo "📦 Vitajte v programe na nastavenie desktop launcherov pre všetkých používateľov!"
 echo "Zdroje sú z: /home/dpv/j44softapps-socketcontro/LAUNCHER-DESKTOP-JADIVDEVCONTRASTROFOT.desktop"
-echo "Spustite len raz – potom to už máte nastavené. 😉"
+echo "Tento launcher bude nainštalovaný do /usr/share/applications a dostupný v systéme. 🖥️"
 echo ""
 read -p "Napíšte y na pokračovanie alebo n na ukončenie: " odpoved
 
 if [[ "$odpoved" == "y" ]]; then
-    echo "✅ Pokračujem v kopírovaní..."
+    echo "✅ Pokračujem v kopírovaní... (potrebné sudo práva)"
 
     # Pôvodný súbor
     SOURCE="/home/dpv/j44softapps-socketcontro/LAUNCHER-DESKTOP-JADIVDEVCONTRASTROFOT.desktop"
 
-    # Cieľové adresáre
-    DESKTOP_TARGET="$HOME/Desktop"
-    MENU_TARGET="$HOME/.local/share/applications"
+    # Cieľový adresár pre systém
+    MENU_TARGET="/usr/share/applications"
 
-    # Vytvorenie priečinkov ak neexistujú
-    mkdir -p "$DESKTOP_TARGET"
-    mkdir -p "$MENU_TARGET"
-
-    # Kopírovanie
-    cp "$SOURCE" "$DESKTOP_TARGET/"
-    cp "$SOURCE" "$MENU_TARGET/"
+    # Kopírovanie so sudo
+    sudo cp "$SOURCE" "$MENU_TARGET/"
 
     # Nastavenie spustiteľnosti
-    chmod +x "$DESKTOP_TARGET/LAUNCHER-DESKTOP-JADIVDEVCONTRASTROFOT.desktop"
-    chmod +x "$MENU_TARGET/LAUNCHER-DESKTOP-JADIVDEVCONTRASTROFOT.desktop"
+    sudo chmod +x "$MENU_TARGET/LAUNCHER-DESKTOP-JADIVDEVCONTRASTROFOT.desktop"
 
-    # Registrácia do menu a na plochu
-    xdg-desktop-menu install --mode user "$MENU_TARGET/LAUNCHER-DESKTOP-JADIVDEVCONTRASTROFOT.desktop"
-    xdg-desktop-icon install --mode user "$MENU_TARGET/LAUNCHER-DESKTOP-JADIVDEVCONTRASTROFOT.desktop"
+    # Registrácia do systémového menu
+    sudo xdg-desktop-menu install "$MENU_TARGET/LAUNCHER-DESKTOP-JADIVDEVCONTRASTROFOT.desktop"
 
-    echo "🎉 Hotovo! Launcher je pridaný na plochu aj do menu."
+    echo "🎉 Hotovo! Launcher je pridaný do systémového menu pre všetkých používateľov."
 
 elif [[ "$odpoved" == "n" ]]; then
     echo "❌ Ukončujem program podľa vašej voľby."
