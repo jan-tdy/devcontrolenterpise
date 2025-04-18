@@ -1,8 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=JaPySoft DevControlEnterprise Starter
-Exec=echo "otvaram adresar" && cd devcontrolenterpise && echo "zapinam flask a otvarm rozhranie" && python3 app.py & && firefox 0.0.0.0:6583
-Terminal=false
-Categories=Science;Application;
-StartupNotify=true
