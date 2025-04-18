@@ -256,10 +256,6 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}")
 
-def loguj(self, msg):
-    t = QtCore.QTime.currentTime().toString()
-    self.log_box.append(f"[{t}] {msg}")
-    self.log_box.moveCursor(QtGui.QTextCursor.End)
     def loguj(self, msg):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
