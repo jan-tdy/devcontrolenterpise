@@ -10,7 +10,7 @@ if [[ "$odpoved" == "y" ]]; then
     echo "✅ Pokračujem v kopírovaní... (potrebné sudo práva)"
 
     # Pôvodný súbor
-    SOURCE="/home/dpv/j44softapps-socketcontro/LAUNCHER-DESKTOP-JADIVDEVCONTRASTROFOT.desktop"
+    SOURCE="/home/dpv/j44softapps-socketcontrol/LAUNCHER-DESKTOP-JADIVDEVCONTRASTROFOT.desktop"
 
     # Cieľový adresár pre systém
     MENU_TARGET="/usr/share/applications"
