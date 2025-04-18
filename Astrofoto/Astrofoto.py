@@ -69,7 +69,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
 
         # INDISTARTER
-        ind_c14 = QtWidgets.QPushButton("Spustiť INDISTARTER C14")
+        ind_c14 = QtWidgets.QPushButton("Spustiť INDISTARTER Astrofoto")
         ind_az = QtWidgets.QPushButton("Spustiť INDISTARTER AZ2000")
         ind_c14.clicked.connect(self.spusti_indistarter_c14)
         ind_az.clicked.connect(self.spusti_indistarter_az2000)
