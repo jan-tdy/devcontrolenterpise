@@ -177,7 +177,7 @@ class MainWindow(QtWidgets.QMainWindow):
             out = subprocess.check_output("indistarter", shell=True)
             self.loguj(out.decode())
         except:
-            self.loguj("Chyba spustenia INDISTARTER C14")
+            self.loguj("Chyba spustenia INDISTARTER astrofoto")
 
     def spusti_indistarter_az2000(self):
         try:
