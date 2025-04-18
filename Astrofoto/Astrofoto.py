@@ -236,7 +236,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             # Download and replace the script
             curl_cmd = (
-                f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"
+                f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/Astrofoto/Astrofoto.py"
                 f" -o {PROGRAM_CESTA}"
             )
             subprocess.run(curl_cmd, shell=True, check=True)
