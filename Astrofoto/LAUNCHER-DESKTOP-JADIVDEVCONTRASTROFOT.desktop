@@ -2,7 +2,7 @@
 Type=Application
 Name=Jadiv DEVCONTROL Enterprise
 Comment=Ovládanie Hvezdárne - Astrofoto (DEVCONTROL Enterprise for Vihorlat Observatory)
-Exec=./j44softapps-socketcontrol/run.sh
+Exec=/home/dpv/j44softapps-socketcontrol/run.sh
 Icon=/home/dpv/j44softapps-socketcontrol/logo.png
 Terminal=false
 Categories=Utility;Science;
