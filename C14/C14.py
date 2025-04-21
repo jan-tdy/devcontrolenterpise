@@ -106,18 +106,12 @@ class MainWindow(QtWidgets.QMainWindow):
         group_wol     = self.init_wake_on_lan_section()
         group_ota     = self.init_ota_section()
         group_kamery = self.init_kamery_section()
-
-
-
-        self.grid_layout.addWidget(group_atacama, 0, 0)
+        
+        self.grid_layout.addWidget(group_atacama, 0, 0, 3, 1)  # Atacama vľavo cez 3 riadky
         self.grid_layout.addWidget(group_ota,     0, 1)
         self.grid_layout.addWidget(group_kamery,  1, 1)
-        self.grid_layout.addWidget(group_wol,     0, 2)
-        self.grid_layout.addWidget(self.log_box,  2, 0, 1, 3)
-
-
-
-
+        self.grid_layout.addWidget(group_wol,     2, 1)
+        self.grid_layout.addWidget(self.log_box,  3, 0, 1, 2)  # log_box cez obe stĺpce
 
         self.aktualizuj_stav_zasuviek()
         self.status_timer = QtCore.QTimer()
