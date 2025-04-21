@@ -275,11 +275,16 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}")
             
-    def loguj(self, msg):
+    def loguj(self, msg, typ="info"):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
         self.log_box.moveCursor(QtGui.QTextCursor.End)
-        toast = Toast(msg, parent=self)
+        try:
+            with open("/home/dpv/j44softapps-socketcontrol/log.txt", "a") as f:
+                f.write(f"[{t}] {msg}\n")
+        except Exception as e:
+            print("Chyba pri ukladaní logu:", e)
+        toast = Toast(msg, typ=typ, parent=self)
         toast.show_()
 
 class SplashScreen(QtWidgets.QSplashScreen):
