@@ -22,6 +22,29 @@ AZ2000_IP = "172.20.20.116"
 SSH_USER2 = "pi2"
 SSH_PASS2 = "otj0711"
 
+class Toast(QtWidgets.QLabel):
+    def __init__(self, msg, typ="info", parent=None):
+        super().__init__(msg, parent)
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        self.setStyleSheet(f"""
+            QLabel {{
+                background-color: {'#d4edda' if typ == 'success' else '#f8d7da' if typ == 'error' else '#d1ecf1'};
+                color: {'#155724' if typ == 'success' else '#721c24' if typ == 'error' else '#0c5460'};
+                border: 1px solid;
+                border-radius: 10px;
+                padding: 8px;
+                font-size: 10pt;
+            }}
+        """)
+        self.adjustSize()
+        QtCore.QTimer.singleShot(3000, self.close)
+
+    def show_(self):
+        screen = QtWidgets.QApplication.primaryScreen().availableGeometry()
+        self.move(screen.width() - self.width() - 20, screen.height() - self.height() - 20)
+        self.show()
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -46,6 +69,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
         self.status_timer.start(5 * 60 * 1000)
+
 
     def init_atacama_section(self):
         group_box = QtWidgets.QGroupBox("ATACAMA")
@@ -250,10 +274,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loguj(f"Chyba pri aktualizácii programu: {e}")
         except Exception as e:
             self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}")
+            
     def loguj(self, msg):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
         self.log_box.moveCursor(QtGui.QTextCursor.End)
+        toast = Toast(msg, parent=self)
+        toast.show_()
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
