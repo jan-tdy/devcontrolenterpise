@@ -16,8 +16,6 @@ ZASUVKY = {
     "RC16": 2
 }
 PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
-README_CESTA = "/home/dpv/j44softapps-socketcontrol/readme.md"
-README_URL = "https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/readme.md"
 SSH_USER = "dpv"
 SSH_PASS = "otj0711"
 CENTRAL2_IP = "172.20.20.133"
