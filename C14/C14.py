@@ -300,7 +300,7 @@ class MainWindow(QtWidgets.QMainWindow):
             subprocess.Popen([sys.executable, PROGRAM_CESTA])
             sys.exit(0)
         except Exception as e:
-            self.loguj("Chyba pri aktualizácii! {e}", "error")
+            self.loguj(f"Chyba pri aktualizácii! {e}", "error")
 
     def aktualizuj_stav_zasuviek(self):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
