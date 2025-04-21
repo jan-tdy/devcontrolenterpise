@@ -39,14 +39,16 @@ class MainWindow(QtWidgets.QMainWindow):
                 font-family: Consolas, monospace;
             }
         
-            QPushButton {
-                background-color: #00ccff;
-                color: black;
-                border-radius: 10px;
-                padding: 6px;
-                font-size: 10px;
-                min-height: 32px;
-                min-width: 60px;
+        QPushButton {
+            background-color: #00ccff;
+            color: black;
+            border-radius: 8px;
+            padding: 4px;
+            font-size: 9pt;
+            min-height: 20px;
+            min-width: 45px;
+        }
+
             }
         
             QPushButton:hover {
@@ -100,10 +102,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.log_box.setMinimumHeight(100)
         self.grid_layout.addWidget(self.log_box, 99, 0, 1, 3)
 
-        self.init_atacama_section()
-        self.init_wake_on_lan_section()
-        self.init_ota_section()
-        self.init_readme_section()
+        group_atacama = self.init_atacama_section()
+        group_wol     = self.init_wake_on_lan_section()
+        group_ota     = self.init_ota_section()
+        group_readme  = self.init_readme_section()
+        
+        self.grid_layout.addWidget(group_atacama, 0, 0)
+        self.grid_layout.addWidget(group_wol,     0, 1)
+        self.grid_layout.addWidget(group_ota,     0, 2)
+        self.grid_layout.addWidget(group_readme,  1, 2)
+        self.grid_layout.addWidget(self.log_box,  2, 0, 1, 3)
+
+
 
         self.aktualizuj_stav_zasuviek()
         self.status_timer = QtCore.QTimer()
@@ -117,18 +127,24 @@ class MainWindow(QtWidgets.QMainWindow):
 
         zasuvky_group = QtWidgets.QGroupBox("Zásuvky")
         zasuvky_layout = QtWidgets.QGridLayout(zasuvky_group)
-        for i, (name, cislo) in enumerate(ZASUVKY.items()):
+        for index, (name, cislo) in enumerate(ZASUVKY.items()):
+            row = index // 3   # max 3 na riadok, potom nový
+            col = (index % 3) * 4  # každý zásuvkový blok zaberie 4 stĺpce
+        
             label = QtWidgets.QLabel(name)
             zapnut = QtWidgets.QPushButton("Zapnúť")
             vypnut = QtWidgets.QPushButton("Vypnúť")
             self.status_labels[name] = QtWidgets.QLabel()
             self.status_labels[name].setPixmap(QtGui.QPixmap("led_def.png"))
+        
             zapnut.clicked.connect(lambda _, n=cislo, l=name: self.ovladaj_zasuvku(n, True, l))
             vypnut.clicked.connect(lambda _, n=cislo, l=name: self.ovladaj_zasuvku(n, False, l))
-            zasuvky_layout.addWidget(label, i, 0)
-            zasuvky_layout.addWidget(zapnut, i, 1)
-            zasuvky_layout.addWidget(vypnut, i, 2)
-            zasuvky_layout.addWidget(self.status_labels[name], i, 3)
+        
+            zasuvky_layout.addWidget(label, row, col)
+            zasuvky_layout.addWidget(zapnut, row, col + 1)
+            zasuvky_layout.addWidget(vypnut, row, col + 2)
+            zasuvky_layout.addWidget(self.status_labels[name], row, col + 3)
+
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
 
         ind_c14 = QtWidgets.QPushButton("Spustiť INDISTARTER C14")
@@ -182,34 +198,52 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_wake_on_lan_section(self):
         box = QtWidgets.QGroupBox("WAKE-ON-LAN")
         box.setObjectName("wakeOnLanBox")
-        lay = QtWidgets.QGridLayout(box)
+        layout = QtWidgets.QGridLayout(box)
+    
         z1 = QtWidgets.QPushButton("Zapni AZ2000")
         z2 = QtWidgets.QPushButton("Zapni GM3000")
         z1.clicked.connect(lambda: self.wake_on_lan("00:c0:08:a9:c2:32"))
         z2.clicked.connect(lambda: self.wake_on_lan("00:c0:08:aa:35:12"))
-        lay.addWidget(z1, 0, 0)
-        lay.addWidget(z2, 0, 1)
-        self.grid_layout.addWidget(box, 0, 1)
+    
+        layout.addWidget(z1, 0, 0)
+        layout.addWidget(z2, 0, 1)
+    
+        return box
+
 
     def init_ota_section(self):
         box = QtWidgets.QGroupBox("OTA Aktualizácie")
-        lay = QtWidgets.QGridLayout(box)
+        layout = QtWidgets.QVBoxLayout(box)
+    
         but = QtWidgets.QPushButton("Aktualizovať program")
         but.clicked.connect(self.aktualizuj_program)
-        lay.addWidget(but, 0, 0)
-        self.grid_layout.addWidget(box, 1, 0)
-        for r, (txt, url) in enumerate([
+        layout.addWidget(but)
+    
+        # Odkazy na kamery
+        for txt, url in [
             ("Kamera Atacama", "http://172.20.20.134"),
             ("Kamera Astrofoto", "http://172.20.20.131")
-        ]):
+        ]:
             lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
             lbl.setOpenExternalLinks(True)
-            self.grid_layout.addWidget(lbl, 1 + r, 1)
+            layout.addWidget(lbl)
+    
+        return box
+
 
     def init_readme_section(self):
-        btn = QtWidgets.QPushButton("Zobraziť rozšírený popis")
+        btn = QtWidgets.QPushButton("ℹ️ README")
+        btn.setFixedWidth(100)
         btn.clicked.connect(self.zobraz_readme)
-        self.grid_layout.addWidget(btn, 2, 0)
+    
+        box = QtWidgets.QWidget()
+        layout = QtWidgets.QHBoxLayout(box)
+        layout.addWidget(btn)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(QtCore.Qt.AlignRight)
+    
+        return box
+
 
     def zobraz_readme(self):
         if os.path.exists(README_CESTA):
@@ -329,8 +363,6 @@ class MainWindow(QtWidgets.QMainWindow):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
         self.log_box.moveCursor(QtGui.QTextCursor.End)
-
-# ... (všetko predtým ostáva nezmenené)
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
