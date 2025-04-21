@@ -93,7 +93,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.grid_layout.setColumnStretch(0, 1)
         self.grid_layout.setColumnStretch(1, 1)
-# self.grid_layout.setColumnStretch(2, 1)
+        # self.grid_layout.setColumnStretch(2, 1)
 
         self.status_labels = {}
         self.log_box = QtWidgets.QTextEdit()
