@@ -306,3 +306,64 @@ class MainWindow(QtWidgets.QMainWindow):
         self.log_box.append(f"[{t}] {msg}")
         self.log_box.moveCursor(QtGui.QTextCursor.End)
 
+# ... (všetko predtým ostáva nezmenené)
+
+class SplashScreen(QtWidgets.QSplashScreen):
+    def __init__(self):
+        pix = QtGui.QPixmap("logo.png")
+        super().__init__(pix)
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint)
+
+        self.setStyleSheet("""
+            QSplashScreen {
+                background-color: black;
+            }
+            QLabel {
+                color: lime;
+                font-family: Consolas;
+            }
+            QProgressBar {
+                border: 2px solid #00ff00;
+                border-radius: 5px;
+                background-color: #111;
+            }
+            QProgressBar::chunk {
+                background-color: lime;
+                width: 10px;
+            }
+        """)
+
+        lic = QtWidgets.QLabel("Licensed under the JADIV Private License v1.0 – see LICENSE file for details.", self)
+        lic.setAlignment(QtCore.Qt.AlignCenter)
+        lic.setGeometry(0, pix.height(), pix.width(), 20)
+
+        lbl = QtWidgets.QLabel("Jadiv DEVCONTROL Enterprise for Vihorlat Observatory", self)
+        lbl.setAlignment(QtCore.Qt.AlignCenter)
+        lbl.setGeometry(0, pix.height() + 20, pix.width(), 40)
+
+        pr = QtWidgets.QProgressBar(self)
+        pr.setGeometry(10, pix.height() + 70, pix.width() - 20, 20)
+        pr.setRange(0, 100)
+        pr.setValue(0)
+        pr.setTextVisible(False)
+        self.pr = pr
+
+        self.resize(pix.width(), pix.height() + 100)
+
+    def simulate_loading(self):
+        for i in range(101):
+            self.pr.setValue(i)
+            QtWidgets.qApp.processEvents()
+            time.sleep(0.010)
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    splash = SplashScreen()
+    splash.show()
+    QtWidgets.qApp.processEvents()
+    splash.simulate_loading()
+
+    window = MainWindow()
+    window.show()
+    splash.finish(window)
+    sys.exit(app.exec_())
