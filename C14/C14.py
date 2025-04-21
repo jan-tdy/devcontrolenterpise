@@ -32,58 +32,86 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setStyleSheet("""
             QWidget {
-                background-color: #f0f0f0;
-                color: #000000;
-                font-family: Consolas, monospace;
+                background-color: #ffffff;
+                color: #212121;
+                font-family: 'Segoe UI', 'Roboto', sans-serif;
+                font-size: 10pt;
             }
-
-        QPushButton {
-            background-color: #00ccff;
-            color: black;
-            border-radius: 8px;
-            padding: 4px;
-            font-size: 9pt;
-            min-height: 20px;
-            min-width: 45px;
-        }
-
+        
+            QPushButton {
+                background-color: #d4e157;  /* Limetková */
+                color: #212121;
+                border: none;
+                border-radius: 12px;
+                padding: 8px 18px;
+                font-weight: bold;
+                transition: all 0.3s ease;
             }
-
+        
             QPushButton:hover {
-                background-color: #cccccc;
+                background-color: #c0ca33;  /* Odtieň pri hover */
             }
-
+        
             QTextEdit#logBox {
-                background-color: #e0ffe0;
-                color: #008000;
-                font-family: Consolas;
+                background-color: #f9fbe7;
+                color: #33691e;
+                border: 1px solid #cddc39;
+                border-radius: 12px;
+                padding: 10px;
             }
-
+        
             QGroupBox {
-                border: 2px solid #006699;
-                border-radius: 10px;
+                background-color: #f0f4c3;
+                border: 2px solid #cddc39;
+                border-radius: 16px;
+                padding: 14px;
                 margin-top: 10px;
-                padding: 8px;
             }
-
+        
             QGroupBox::title {
                 subcontrol-origin: margin;
-                subcontrol-position: top center;
-                padding: 0 6px;
-                color: #003366;
+                subcontrol-position: top left;
+                padding: 6px 14px;
+                font-weight: bold;
+                color: #33691e;
+                background-color: transparent;
             }
-
-            QGroupBox#wakeOnLanBox QLabel, QGroupBox#wakeOnLanBox QPushButton {
-                color: #ff6600;
+        
+            QLabel {
+                color: #212121;
+                font-weight: normal;
             }
-
-            QGroupBox#indistarterBox QLabel, QGroupBox#indistarterBox QPushButton {
-                color: #003366;
+        
+            QLineEdit, QComboBox, QCheckBox {
+                background-color: #ffffff;
+                border: 1px solid #cddc39;
+                border-radius: 8px;
+                padding: 6px;
+            }
+        
+            QLineEdit:focus, QComboBox:focus {
+                border: 2px solid #aeea00;
+            }
+        
+            QCheckBox {
+                padding-left: 4px;
+            }
+        
+            QScrollBar:vertical, QScrollBar:horizontal {
+                background: #f1f8e9;
+                border-radius: 6px;
+                width: 10px;
+            }
+        
+            QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+                background: #cddc39;
+                border-radius: 6px;
+            }
+        
+            QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+                background: #afb42b;
             }
         """)
-
-
-
 
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
