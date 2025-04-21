@@ -2,11 +2,12 @@
 import sys
 import subprocess
 import time
+import threading
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
 from wakeonlan import send_magic_packet
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 import os
 
@@ -143,25 +144,100 @@ class MainWindow(QtWidgets.QMainWindow):
         self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
         self.status_timer.start(5 * 60 * 1000)
 
-        self.timer_kill = QtCore.QTimer()
-        self.timer_kill.timeout.connect(self.skontroluj_a_killni_ccdciel_indi)
-        self.timer_kill.start(60 * 1000)  # každú minútu
+        self.kill_timer = QtCore.QTimer()
+        self.kill_timer.timeout.connect(self.auto_kill_processes)
+        self.kill_timer.start(60 * 1000)
 
-    def skontroluj_a_killni_ccdciel_indi(self):
-        teraz = datetime.now()
-        je_utorok = teraz.weekday() == 1
-        je_stvrtok = teraz.weekday() == 3
-        treti_stvrtok = (teraz.day - 1) // 7 == 2
-        je_cas = teraz.hour == 1 and teraz.minute == 26
-
-        if je_cas and (je_utorok or (je_stvrtok and treti_stvrtok)):
+    def auto_kill_processes(self):
+        now = datetime.now()
+        weekday = now.weekday()
+        if now.hour == 1 and now.minute == 26 and (weekday == 1 or (weekday == 3 and 15 <= now.day <= 21)):
             try:
                 subprocess.run("pkill -f ccdciel", shell=True)
                 subprocess.run("pkill -f indi", shell=True)
-            except Exception as e:
+            except:
                 pass
 
-    # (zvyšok triedy zostáva nezmenený)
+    def aktualizuj_stav_zasuviek(self):
+        self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
+        for n, c in ZASUVKY.items():
+            self.zisti_stav_zasuvky(c, n)
+
+    def zisti_stav_zasuvky(self, cis, lab):
+        try:
+            out = subprocess.check_output(f"sispmctl -nqg {cis}", shell=True, text=True).strip()
+            pix = "led_green.png" if out == "1" else "led_red.png" if out == "0" else "led_def.png"
+            self.status_labels[lab].setPixmap(QtGui.QPixmap(pix))
+        except:
+            self.status_labels[lab].setPixmap(QtGui.QPixmap("led_def.png"))
+
+    def loguj(self, msg, typ="info"):
+        if "Aktualizujem stav zásuviek" in msg:
+            return
+        t = QtCore.QTime.currentTime().toString()
+        full_msg = f"[{t}] {msg}"
+        self.log_box.append(full_msg)
+        self.log_box.moveCursor(QtGui.QTextCursor.End)
+        try:
+            with open(self.log_file_path, "a") as f:
+                f.write(full_msg + "\n")
+        except Exception as e:
+            print("Chyba pri ukladaní logu:", e)
+
+    def aktualizuj_program(self):
+        try:
+            subprocess.run(f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py -o {PROGRAM_CESTA}", shell=True, check=True)
+            self.loguj("Program bol úspešne aktualizovaný. Reštartujem.", "success")
+            subprocess.Popen([sys.executable, PROGRAM_CESTA])
+            sys.exit(0)
+        except Exception as e:
+            self.loguj(f"Chyba pri aktualizácii! {e}", "error")
+
+    def ovladaj_strechu(self, s):
+        if s == "sever":
+            p1, p2 = "crelay -s BITFT 2 ON", "crelay -s BITFT 2 OFF"
+        elif s == "juh":
+            p1, p2 = "crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF"
+        elif s == "both":
+            try:
+                subprocess.run("crelay -s BITFT 1 ON", shell=True, check=True)
+                subprocess.run("crelay -s BITFT 2 ON", shell=True, check=True)
+                time.sleep(2)
+                subprocess.run("crelay -s BITFT 1 OFF", shell=True, check=True)
+                subprocess.run("crelay -s BITFT 2 OFF", shell=True, check=True)
+                return
+            except:
+                self.loguj(f"Chyba strecha {s}")
+                return
+        else:
+            return
+        try:
+            subprocess.run(p1, shell=True, check=True)
+            time.sleep(2)
+            subprocess.run(p2, shell=True, check=True)
+        except:
+            self.loguj(f"Chyba strecha {s}")
+
+    def spusti_indistarter_c14(self):
+        try:
+            out = subprocess.check_output("indistarter", shell=True)
+            self.loguj(out.decode())
+        except:
+            self.loguj("Chyba spustenia INDISTARTER C14")
+
+    def spusti_indistarter_az2000(self):
+        try:
+            out = subprocess.check_output(f"ssh {SSH_USER2}@{AZ2000_IP} indistarter", shell=True)
+            self.loguj(out.decode())
+        except:
+            self.loguj("Chyba INDISTARTER AZ2000")
+
+    def wake_on_lan(self, mac):
+        try:
+            send_magic_packet(mac)
+            self.loguj(f"WOL na {mac}")
+        except:
+            self.loguj("Chyba WOL")
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
@@ -231,15 +307,22 @@ if __name__ == "__main__":
         layout.addWidget(error_details)
         def spusti_update():
             try:
-                subprocess.run(
-                    f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py -o {PROGRAM_CESTA}",
-                    shell=True, check=True)
+                subprocess.run(f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py -o {PROGRAM_CESTA}", shell=True, check=True)
                 QtWidgets.QMessageBox.information(bug_window, "Hotovo", "Program bol aktualizovaný. Spusť ho znova.")
                 bug_window.close()
             except Exception as ex:
                 QtWidgets.QMessageBox.critical(bug_window, "Chyba", f"Zlyhala aktualizácia: {ex}")
+        def nainstaluj_zavislosti():
+            try:
+                subprocess.run("pip install pyqt5 wakeonlan pytz", shell=True)
+                QtWidgets.QMessageBox.information(bug_window, "OK", "Závislosti boli nainštalované.")
+            except Exception as ex:
+                QtWidgets.QMessageBox.critical(bug_window, "Chyba", f"Zlyhala inštalácia závislostí: {ex}")
         btn_update = QtWidgets.QPushButton("Aktualizovať program")
         btn_update.clicked.connect(spusti_update)
         layout.addWidget(btn_update)
+        btn_install = QtWidgets.QPushButton("Nainštalovať závislosti")
+        btn_install.clicked.connect(nainstaluj_zavislosti)
+        layout.addWidget(btn_install)
         bug_window.show()
     sys.exit(app.exec_())
