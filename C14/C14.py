@@ -131,9 +131,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 
-        self.main_layout = QtWidgets.QWidget()
-        self.setCentralWidget(self.main_layout)
-        self.grid_layout = QtWidgets.QGridLayout(self.main_layout)
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        self.setCentralWidget(scroll)
+        
+        content_widget = QtWidgets.QWidget()
+        scroll.setWidget(content_widget)
+        
+        self.main_layout = QtWidgets.QVBoxLayout(content_widget)
+
 
         self.grid_layout.setColumnStretch(0, 1)
         self.grid_layout.setColumnStretch(1, 1)
