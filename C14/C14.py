@@ -187,14 +187,14 @@ class MainWindow(QtWidgets.QMainWindow):
             vypnut = QtWidgets.QPushButton("Vypnúť")
             self.status_labels[name] = QtWidgets.QLabel()
             self.status_labels[name].setPixmap(QtGui.QPixmap("led_def.png"))
-
+        
             zapnut.clicked.connect(lambda _, n=cislo, l=name: self.ovladaj_zasuvku(n, True, l))
             vypnut.clicked.connect(lambda _, n=cislo, l=name: self.ovladaj_zasuvku(n, False, l))
-
+        
             zasuvky_layout.addWidget(label, index, 0)
             zasuvky_layout.addWidget(zapnut, index, 1)
             zasuvky_layout.addWidget(vypnut, index, 2)
-        zasuvky_layout.addWidget(self.status_labels[name], index, 3)
+            zasuvky_layout.addWidget(self.status_labels[name], index, 3)  # ← TU presunuté
 
 
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
