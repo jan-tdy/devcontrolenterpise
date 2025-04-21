@@ -105,11 +105,21 @@ class MainWindow(QtWidgets.QMainWindow):
         group_atacama = self.init_atacama_section()
         group_wol     = self.init_wake_on_lan_section()
         group_ota     = self.init_ota_section()
+        group_kamery = self.init_kamery_section()
+
+
+        group_atacama = self.init_atacama_section()
+        group_ota     = self.init_ota_section()
+        group_kamery  = self.init_kamery_section()
+        group_wol     = self.init_wake_on_lan_section()
         
         self.grid_layout.addWidget(group_atacama, 0, 0)
-        self.grid_layout.addWidget(group_wol,     0, 1)
-        self.grid_layout.addWidget(group_ota,     0, 2)
+        self.grid_layout.addWidget(group_ota,     0, 1)
+        self.grid_layout.addWidget(group_kamery,  1, 1)
+        self.grid_layout.addWidget(group_wol,     0, 2)
         self.grid_layout.addWidget(self.log_box,  2, 0, 1, 3)
+        
+
 
 
 
@@ -126,9 +136,6 @@ class MainWindow(QtWidgets.QMainWindow):
         zasuvky_group = QtWidgets.QGroupBox("Zásuvky")
         zasuvky_layout = QtWidgets.QGridLayout(zasuvky_group)
         for index, (name, cislo) in enumerate(ZASUVKY.items()):
-            row = index // 3   # max 3 na riadok, potom nový
-            col = (index % 3) * 4  # každý zásuvkový blok zaberie 4 stĺpce
-        
             label = QtWidgets.QLabel(name)
             zapnut = QtWidgets.QPushButton("Zapnúť")
             vypnut = QtWidgets.QPushButton("Vypnúť")
@@ -138,10 +145,11 @@ class MainWindow(QtWidgets.QMainWindow):
             zapnut.clicked.connect(lambda _, n=cislo, l=name: self.ovladaj_zasuvku(n, True, l))
             vypnut.clicked.connect(lambda _, n=cislo, l=name: self.ovladaj_zasuvku(n, False, l))
         
-            zasuvky_layout.addWidget(label, row, col)
-            zasuvky_layout.addWidget(zapnut, row, col + 1)
-            zasuvky_layout.addWidget(vypnut, row, col + 2)
-            zasuvky_layout.addWidget(self.status_labels[name], row, col + 3)
+            zasuvky_layout.addWidget(label, index, 0)
+            zasuvky_layout.addWidget(zapnut, index, 1)
+            zasuvky_layout.addWidget(vypnut, index, 2)
+        zasuvky_layout.addWidget(self.status_labels[name], index, 3)
+
 
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
 
@@ -210,25 +218,25 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def init_ota_section(self):
-        box = QtWidgets.QGroupBox("OTA Aktualizácie")
-        layout = QtWidgets.QVBoxLayout(box)
-    
-        but = QtWidgets.QPushButton("Aktualizovať program")
-        but.clicked.connect(self.aktualizuj_program)
-        layout.addWidget(but)
-    
-        # Odkazy na kamery
-        for txt, url in [
-            ("Kamera Atacama", "http://172.20.20.134"),
-            ("Kamera Astrofoto", "http://172.20.20.131")
-        ]:
-            lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
-            lbl.setOpenExternalLinks(True)
-            layout.addWidget(lbl)
-    
-        return box
+    but = QtWidgets.QPushButton("Aktualizovať program")
+    but.clicked.connect(self.aktualizuj_program)
+    layout.addWidget(but)
 
+    return box
 
+def init_kamery_section(self):
+    box = QtWidgets.QGroupBox("Kamery")
+    layout = QtWidgets.QVBoxLayout(box)
+
+    for txt, url in [
+        ("Kamera Atacama", "http://172.20.20.134"),
+        ("Kamera Astrofoto", "http://172.20.20.131")
+    ]:
+        lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
+        lbl.setOpenExternalLinks(True)
+        layout.addWidget(lbl)
+
+    return box
 
 
     def zobraz_readme(self):
