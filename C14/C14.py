@@ -33,7 +33,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.setStyleSheet("""
             QWidget {
-                background-color: black;
+                background-color: #1a1a1a;
                 color: lime;
                 font-family: Consolas, monospace;
             }
@@ -41,32 +41,33 @@ class MainWindow(QtWidgets.QMainWindow):
                 background-color: #00ff00;
                 color: black;
                 border-radius: 15px;
-                padding: 10px;
-                font-size: 10px;
-                min-width: 40px;
-                min-height: 40px;
-                max-width: 60px;
-                max-height: 60px;
+                padding: 12px;
+                font-size: 12px;
+                min-width: 80px;
+                min-height: 50px;
             }
             QPushButton:hover {
                 background-color: #666;
             }
             QTextEdit {
-                background-color: #111;
-                color: lime;
+                background-color: #0d0d0d;
+                color: #00ff00;
                 font-family: Consolas;
             }
             QGroupBox {
-                border: 2px solid #00ff00;
+                border: 2px solid #00ffcc;
                 border-radius: 10px;
                 margin-top: 10px;
+                padding: 8px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top center;
-                padding: 0 3px;
+                padding: 0 6px;
+                color: #00ffff;
             }
         """)
+
 
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
