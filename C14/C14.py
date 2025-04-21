@@ -29,8 +29,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 02")
-        self.resize(1000, 500)  # Počiatočná veľkosť 
-        self.setMinimumSize(800, 400)  # Minimálna veľkosť
+        self.resize(1100, 500)  # väčšia šírka, menšia výška
+        self.setMinimumSize(900, 400)  # aby sa to nedalo scvrknúť úplne
 
         self.setStyleSheet("""
             QWidget {
@@ -38,33 +38,39 @@ class MainWindow(QtWidgets.QMainWindow):
                 color: #000000;
                 font-family: Consolas, monospace;
             }
+        
             QPushButton {
                 background-color: #00ccff;
                 color: black;
-                border-radius: 15px;
-                padding: 12px;
-                font-size: 12px;
-                min-height: 50px;
+                border-radius: 10px;
+                padding: 6px;
+                font-size: 10px;
+                min-height: 32px;
+                min-width: 60px;
             }
+        
             QPushButton:hover {
                 background-color: #cccccc;
             }
+        
             QTextEdit#logBox {
                 background-color: #e0ffe0;
                 color: #008000;
                 font-family: Consolas;
             }
+        
             QGroupBox {
-                border: 2px solid #00ccff;
+                border: 2px solid #006699;
                 border-radius: 10px;
                 margin-top: 10px;
                 padding: 8px;
             }
+        
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top center;
                 padding: 0 6px;
-                color: #0066cc;
+                color: #003366;
             }
         
             QGroupBox#wakeOnLanBox QLabel, QGroupBox#wakeOnLanBox QPushButton {
@@ -72,7 +78,7 @@ class MainWindow(QtWidgets.QMainWindow):
             }
         
             QGroupBox#indistarterBox QLabel, QGroupBox#indistarterBox QPushButton {
-                color: #0066cc;
+                color: #003366;
             }
         """)
 
