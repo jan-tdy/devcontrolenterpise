@@ -93,7 +93,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.grid_layout.setColumnStretch(0, 1)
         self.grid_layout.setColumnStretch(1, 1)
-        self.grid_layout.setColumnStretch(2, 1)
+# self.grid_layout.setColumnStretch(2, 1)
 
         self.status_labels = {}
         self.log_box = QtWidgets.QTextEdit()
@@ -209,13 +209,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_ota_section(self):
         box = QtWidgets.QGroupBox("OTA Aktualizácie")
+        box.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         layout = QtWidgets.QVBoxLayout(box)
-
+    
         but = QtWidgets.QPushButton("Aktualizovať program")
         but.clicked.connect(self.aktualizuj_program)
         layout.addWidget(but)
-
+    
         return box
+
 
 
     def init_kamery_section(self):
