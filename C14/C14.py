@@ -8,6 +8,7 @@ import PyQt5.QtCore as QtCore
 from wakeonlan import send_magic_packet
 from datetime import datetime
 import pytz
+import os
 
 ZASUVKY = {
     "NOUT": 4,
@@ -15,6 +16,8 @@ ZASUVKY = {
     "RC16": 2
 }
 PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
+README_CESTA = "/home/dpv/j44softapps-socketcontrol/readme.md"
+README_URL = "https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/readme.md"
 SSH_USER = "dpv"
 SSH_PASS = "otj0711"
 CENTRAL2_IP = "172.20.20.133"
@@ -27,6 +30,43 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 02")
         self.setGeometry(100, 100, 800, 600)
+
+        self.setStyleSheet("""
+            QWidget {
+                background-color: black;
+                color: lime;
+                font-family: Consolas, monospace;
+            }
+            QPushButton {
+                background-color: #00ff00;
+                color: black;
+                border-radius: 15px;
+                padding: 10px;
+                font-size: 10px;
+                min-width: 40px;
+                min-height: 40px;
+                max-width: 60px;
+                max-height: 60px;
+            }
+            QPushButton:hover {
+                background-color: #666;
+            }
+            QTextEdit {
+                background-color: #111;
+                color: lime;
+                font-family: Consolas;
+            }
+            QGroupBox {
+                border: 2px solid #00ff00;
+                border-radius: 10px;
+                margin-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 0 3px;
+            }
+        """)
 
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
@@ -41,6 +81,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.init_atacama_section()
         self.init_wake_on_lan_section()
         self.init_ota_section()
+        self.init_readme_section()
 
         self.aktualizuj_stav_zasuviek()
         self.status_timer = QtCore.QTimer()
@@ -51,7 +92,6 @@ class MainWindow(QtWidgets.QMainWindow):
         group_box = QtWidgets.QGroupBox("ATACAMA")
         layout = QtWidgets.QGridLayout(group_box)
 
-        # Zásuvky
         zasuvky_group = QtWidgets.QGroupBox("Zásuvky")
         zasuvky_layout = QtWidgets.QGridLayout(zasuvky_group)
         for i, (name, cislo) in enumerate(ZASUVKY.items()):
@@ -68,7 +108,6 @@ class MainWindow(QtWidgets.QMainWindow):
             zasuvky_layout.addWidget(self.status_labels[name], i, 3)
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
 
-        # INDISTARTER
         ind_c14 = QtWidgets.QPushButton("Spustiť INDISTARTER C14")
         ind_az = QtWidgets.QPushButton("Spustiť INDISTARTER AZ2000")
         ind_c14.clicked.connect(self.spusti_indistarter_c14)
@@ -76,7 +115,6 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(ind_c14, 1, 0, 1, 3)
         layout.addWidget(ind_az, 2, 0, 1, 3)
 
-        # Strecha
         strecha_group = QtWidgets.QGroupBox("Strecha")
         strecha_layout = QtWidgets.QGridLayout(strecha_group)
         self.sever_button = QtWidgets.QPushButton("Sever")
@@ -90,7 +128,6 @@ class MainWindow(QtWidgets.QMainWindow):
         strecha_layout.addWidget(self.both_button, 0, 2)
         layout.addWidget(strecha_group, 3, 0, 1, 3)
 
-        # Časovač strechy
         cas_group = QtWidgets.QGroupBox("Načasovať strechu")
         cas_layout = QtWidgets.QGridLayout(cas_group)
         self.cas_enable = QtWidgets.QCheckBox("Aktivovať časovač")
@@ -112,7 +149,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.grid_layout.addWidget(group_box, 0, 0)
 
-        # Timer strechy
         self.timer_strecha = QtCore.QTimer()
         self.timer_strecha.timeout.connect(self.skontroluj_cas_strechy)
         self.timer_strecha.start(60 * 1000)
@@ -146,6 +182,34 @@ class MainWindow(QtWidgets.QMainWindow):
             lbl.setOpenExternalLinks(True)
             self.grid_layout.addWidget(lbl, 1 + r, 1)
 
+    def init_readme_section(self):
+        btn = QtWidgets.QPushButton("Zobraziť rozšírený popis")
+        btn.clicked.connect(self.zobraz_readme)
+        self.grid_layout.addWidget(btn, 2, 0)
+
+    def zobraz_readme(self):
+        if os.path.exists(README_CESTA):
+            with open(README_CESTA, "r") as f:
+                text = f.read()
+            dlg = QtWidgets.QMessageBox(self)
+            dlg.setWindowTitle("Rozšírený popis aplikácie")
+            dlg.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            dlg.setText(text[:5000] + ("..." if len(text) > 5000 else ""))
+            dlg.exec_()
+        else:
+            self.loguj("README neexistuje.")
+
+    def aktualizuj_program(self):
+        try:
+            subprocess.run(f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py -o {PROGRAM_CESTA}", shell=True, check=True)
+            subprocess.run(f"curl -fsSL {README_URL} -o {README_CESTA}", shell=True, check=True)
+            self.loguj("Program a README boli úspešne aktualizované.")
+            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu.")
+            subprocess.Popen([sys.executable, PROGRAM_CESTA])
+            sys.exit(0)
+        except Exception as e:
+            self.loguj(f"Chyba pri aktualizácii: {e}")
+
     def aktualizuj_stav_zasuviek(self):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
         for n, c in ZASUVKY.items():
@@ -154,11 +218,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def zisti_stav_zasuvky(self, cis, lab):
         try:
             out = subprocess.check_output(f"sispmctl -nqg {cis}", shell=True, text=True).strip()
-            pix = (
-                "led_green.png" if out == "1" else
-                "led_red.png" if out == "0" else
-                "led_def.png"
-            )
+            pix = "led_green.png" if out == "1" else "led_red.png" if out == "0" else "led_def.png"
             self.status_labels[lab].setPixmap(QtGui.QPixmap(pix))
         except:
             self.status_labels[lab].setPixmap(QtGui.QPixmap("led_def.png"))
@@ -192,7 +252,16 @@ class MainWindow(QtWidgets.QMainWindow):
         elif s == "juh":
             p1, p2 = "crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF"
         elif s == "both":
-            p1, p2 = "crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF", "crelay -s BITFT 2 ON","crelay -s BITFT 2 OFF"
+            try:
+                subprocess.run("crelay -s BITFT 1 ON", shell=True, check=True)
+                subprocess.run("crelay -s BITFT 2 ON", shell=True, check=True)
+                time.sleep(2)
+                subprocess.run("crelay -s BITFT 1 OFF", shell=True, check=True)
+                subprocess.run("crelay -s BITFT 2 OFF", shell=True, check=True)
+                return
+            except:
+                self.loguj(f"Chyba strecha {s}")
+                return
         else:
             return
         try:
@@ -232,77 +301,8 @@ class MainWindow(QtWidgets.QMainWindow):
         except:
             self.loguj("Chyba WOL")
 
-    def aktualizuj_program(self):
-        try:
-            # Download and replace the script
-            curl_cmd = (
-                f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"
-                f" -o {PROGRAM_CESTA}"
-            )
-            subprocess.run(curl_cmd, shell=True, check=True)
-            self.loguj("Program bol úspešne aktualizovaný.")
-            # Inform user and restart application
-            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu po zavretí tohto dialógu, ak nebude úspech naštartujte aplikáciu manuálne.")
-            # Relaunch
-            subprocess.Popen([sys.executable, PROGRAM_CESTA])
-            sys.exit(0)
-        except subprocess.CalledProcessError as e:
-            self.loguj(f"Chyba pri aktualizácii programu: {e}")
-        except Exception as e:
-            self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}")
     def loguj(self, msg):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
         self.log_box.moveCursor(QtGui.QTextCursor.End)
 
-class SplashScreen(QtWidgets.QSplashScreen):
-    def __init__(self):
-        pix = QtGui.QPixmap("logo.png")
-        super().__init__(pix)
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint)
-
-        # Licenčný text
-        lic = QtWidgets.QLabel(
-            "Licensed under the JADIV Private License v1.0 – see LICENSE file for details.",
-            self
-        )
-        lic.setStyleSheet("color: blue; font-size: 8px;")
-        lic.setAlignment(QtCore.Qt.AlignCenter)
-        lic.setGeometry(0, pix.height(), pix.width(), 20)
-
-        # Nadpis
-        lbl = QtWidgets.QLabel(
-            "Jadiv DEVCONTROL Enterprise for Vihorlat Observatory",
-            self
-        )
-        lbl.setStyleSheet("color: blue; font-weight: bold; font-size: 10px;")
-        lbl.setAlignment(QtCore.Qt.AlignCenter)
-        lbl.setGeometry(0, pix.height() + 20, pix.width(), 40)
-
-        # Progress bar (fake loading)
-        pr = QtWidgets.QProgressBar(self)
-        pr.setGeometry(10, pix.height() + 70, pix.width() - 20, 20)
-        pr.setRange(0, 100)
-        pr.setValue(0)
-        pr.setTextVisible(False)
-        self.pr = pr
-
-        self.resize(pix.width(), pix.height() + 100)
-
-    def simulate_loading(self):
-        for i in range(101):
-            self.pr.setValue(i)
-            QtWidgets.qApp.processEvents()
-            time.sleep(0.010)
-
-if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    splash = SplashScreen()
-    splash.show()
-    QtWidgets.qApp.processEvents()
-    splash.simulate_loading()
-
-    window = MainWindow()
-    window.show()
-    splash.finish(window)
-    sys.exit(app.exec_())
