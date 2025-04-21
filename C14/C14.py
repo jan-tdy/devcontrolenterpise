@@ -359,45 +359,45 @@ class MainWindow(QtWidgets.QMainWindow):
             print("Chyba pri ukladaní logu:", e)
 
 
-def zobraz_toast(self, text, typ="info", trvanie_ms=3000):
-    toast = QtWidgets.QLabel(self)
+    def zobraz_toast(self, text, typ="info", trvanie_ms=3000):
+        toast = QtWidgets.QLabel(self)
+        
+        farby = {
+            "info": "#007bff",     # modrá
+            "success": "#28a745",  # zelená
+            "error": "#dc3545"     # červená
+        }
+        ikony = {
+            "info": "ℹ️",
+            "success": "✅",
+            "error": "❌"
+        }
     
-    farby = {
-        "info": "#007bff",     # modrá
-        "success": "#28a745",  # zelená
-        "error": "#dc3545"     # červená
-    }
-    ikony = {
-        "info": "ℹ️",
-        "success": "✅",
-        "error": "❌"
-    }
-
-    farba = farby.get(typ, "#333")
-    ikona = ikony.get(typ, "🔔")
-
-    toast.setText(f"{ikona} {text}")
-
-    # 🌟 Tieňový efekt
-    effect = QtWidgets.QGraphicsDropShadowEffect()
-    effect.setBlurRadius(15)
-    effect.setOffset(4, 4)
-    effect.setColor(QtGui.QColor(0, 0, 0, 160))  # jemný tieň
-    toast.setGraphicsEffect(effect)
-
-    toast.setStyleSheet(f"""
-        background-color: {farba};
-        color: white;
-        padding: 10px 20px;
-        border-radius: 20px;
-        font-size: 10pt;
-    """)
-    toast.setWindowFlags(QtCore.Qt.ToolTip)
-    toast.adjustSize()
-    toast.move(self.width() - toast.width() - 20, self.height() - toast.height() - 60)
-    toast.show()
-
-    QtCore.QTimer.singleShot(trvanie_ms, toast.close)
+        farba = farby.get(typ, "#333")
+        ikona = ikony.get(typ, "🔔")
+    
+        toast.setText(f"{ikona} {text}")
+    
+        # 🌟 Tieňový efekt
+        effect = QtWidgets.QGraphicsDropShadowEffect()
+        effect.setBlurRadius(15)
+        effect.setOffset(4, 4)
+        effect.setColor(QtGui.QColor(0, 0, 0, 160))  # jemný tieň
+        toast.setGraphicsEffect(effect)
+    
+        toast.setStyleSheet(f"""
+            background-color: {farba};
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 10pt;
+        """)
+        toast.setWindowFlags(QtCore.Qt.ToolTip)
+        toast.adjustSize()
+        toast.move(self.width() - toast.width() - 20, self.height() - toast.height() - 60)
+        toast.show()
+    
+        QtCore.QTimer.singleShot(trvanie_ms, toast.close)
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
@@ -449,12 +449,50 @@ class SplashScreen(QtWidgets.QSplashScreen):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+
     splash = SplashScreen()
     splash.show()
     QtWidgets.qApp.processEvents()
     splash.simulate_loading()
 
-    window = MainWindow()
-    window.show()
-    splash.finish(window)
+    try:
+        window = MainWindow()
+        window.show()
+        splash.finish(window)
+    except Exception as e:
+        splash.close()
+
+        # Náhradné okno pri chybe
+        bug_window = QtWidgets.QWidget()
+        bug_window.setWindowTitle("SPLASH BUG – Chyba pri štarte hlavného okna")
+        bug_window.setMinimumSize(500, 200)
+        layout = QtWidgets.QVBoxLayout(bug_window)
+
+        error_label = QtWidgets.QLabel("Nastal problém pri štarte hlavného okna aplikácie.\nPravdepodobne je chyba v aktualizovanom kóde.\n")
+        error_label.setStyleSheet("color: red; font-size: 11pt; font-weight: bold;")
+        layout.addWidget(error_label)
+
+        # Výpis chyby
+        error_details = QtWidgets.QTextEdit()
+        error_details.setReadOnly(True)
+        error_details.setPlainText(str(e))
+        layout.addWidget(error_details)
+
+        # Tlačidlo na aktualizáciu programu
+        def spusti_update():
+            try:
+                subprocess.run(
+                    f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py -o {PROGRAM_CESTA}",
+                    shell=True, check=True)
+                QtWidgets.QMessageBox.information(bug_window, "Hotovo", "Program bol aktualizovaný. Spusť ho znova.")
+                bug_window.close()
+            except Exception as ex:
+                QtWidgets.QMessageBox.critical(bug_window, "Chyba", f"Zlyhala aktualizácia: {ex}")
+
+        btn_update = QtWidgets.QPushButton("Aktualizovať program")
+        btn_update.clicked.connect(spusti_update)
+        layout.addWidget(btn_update)
+
+        bug_window.show()
+
     sys.exit(app.exec_())
