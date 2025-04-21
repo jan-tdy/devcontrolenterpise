@@ -27,7 +27,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ovládanie Hvezdárne - C14")
-        self.resize(1600, 800)  # väčšia šírka, menšia výška
+        self.resize(1500, 700)  # väčšia šírka, menšia výška
         self.setMinimumSize(900, 400)  # aby sa to nedalo scvrknúť úplne
 
         self.log_file_path = "/home/dpv/j44softapps-socketcontrol/log.txt"
