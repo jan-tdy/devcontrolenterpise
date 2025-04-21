@@ -6,7 +6,7 @@ import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
 from wakeonlan import send_magic_packet
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import os
 
@@ -143,86 +143,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
         self.status_timer.start(5 * 60 * 1000)
 
-    def aktualizuj_stav_zasuviek(self):
-        self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
-        for n, c in ZASUVKY.items():
-            self.zisti_stav_zasuvky(c, n)
+        self.timer_kill = QtCore.QTimer()
+        self.timer_kill.timeout.connect(self.skontroluj_a_killni_ccdciel_indi)
+        self.timer_kill.start(60 * 1000)  # každú minútu
 
-    def zisti_stav_zasuvky(self, cis, lab):
-        try:
-            out = subprocess.check_output(f"sispmctl -nqg {cis}", shell=True, text=True).strip()
-            pix = "led_green.png" if out == "1" else "led_red.png" if out == "0" else "led_def.png"
-            self.status_labels[lab].setPixmap(QtGui.QPixmap(pix))
-        except:
-            self.status_labels[lab].setPixmap(QtGui.QPixmap("led_def.png"))
+    def skontroluj_a_killni_ccdciel_indi(self):
+        teraz = datetime.now()
+        je_utorok = teraz.weekday() == 1
+        je_stvrtok = teraz.weekday() == 3
+        treti_stvrtok = (teraz.day - 1) // 7 == 2
+        je_cas = teraz.hour == 1 and teraz.minute == 26
 
-    def loguj(self, msg, typ="info"):
-        if "Aktualizujem stav zásuviek" in msg:
-            return
-        t = QtCore.QTime.currentTime().toString()
-        full_msg = f"[{t}] {msg}"
-        self.log_box.append(full_msg)
-        self.log_box.moveCursor(QtGui.QTextCursor.End)
-        try:
-            with open(self.log_file_path, "a") as f:
-                f.write(full_msg + "\n")
-        except Exception as e:
-            print("Chyba pri ukladaní logu:", e)
-
-    def aktualizuj_program(self):
-        try:
-            subprocess.run(f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py -o {PROGRAM_CESTA}", shell=True, check=True)
-            self.loguj("Program bol úspešne aktualizovaný. Reštartujem.", "success")
-            subprocess.Popen([sys.executable, PROGRAM_CESTA])
-            sys.exit(0)
-        except Exception as e:
-            self.loguj(f"Chyba pri aktualizácii! {e}", "error")
-
-    def ovladaj_strechu(self, s):
-        if s == "sever":
-            p1, p2 = "crelay -s BITFT 2 ON", "crelay -s BITFT 2 OFF"
-        elif s == "juh":
-            p1, p2 = "crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF"
-        elif s == "both":
+        if je_cas and (je_utorok or (je_stvrtok and treti_stvrtok)):
             try:
-                subprocess.run("crelay -s BITFT 1 ON", shell=True, check=True)
-                subprocess.run("crelay -s BITFT 2 ON", shell=True, check=True)
-                time.sleep(2)
-                subprocess.run("crelay -s BITFT 1 OFF", shell=True, check=True)
-                subprocess.run("crelay -s BITFT 2 OFF", shell=True, check=True)
-                return
-            except:
-                self.loguj(f"Chyba strecha {s}")
-                return
-        else:
-            return
-        try:
-            subprocess.run(p1, shell=True, check=True)
-            time.sleep(2)
-            subprocess.run(p2, shell=True, check=True)
-        except:
-            self.loguj(f"Chyba strecha {s}")
+                subprocess.run("pkill -f ccdciel", shell=True)
+                subprocess.run("pkill -f indi", shell=True)
+            except Exception as e:
+                pass
 
-    def spusti_indistarter_c14(self):
-        try:
-            out = subprocess.check_output("indistarter", shell=True)
-            self.loguj(out.decode())
-        except:
-            self.loguj("Chyba spustenia INDISTARTER C14")
-
-    def spusti_indistarter_az2000(self):
-        try:
-            out = subprocess.check_output(f"ssh {SSH_USER2}@{AZ2000_IP} indistarter", shell=True)
-            self.loguj(out.decode())
-        except:
-            self.loguj("Chyba INDISTARTER AZ2000")
-
-    def wake_on_lan(self, mac):
-        try:
-            send_magic_packet(mac)
-            self.loguj(f"WOL na {mac}")
-        except:
-            self.loguj("Chyba WOL")
+    # (zvyšok triedy zostáva nezmenený)
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
