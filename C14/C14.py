@@ -359,38 +359,46 @@ class MainWindow(QtWidgets.QMainWindow):
             print("Chyba pri ukladaní logu:", e)
 
 
-    def zobraz_toast(self, text, typ="info", trvanie_ms=3000):
-        toast = QtWidgets.QLabel(self)
-        
-        farby = {
-            "info": "#007bff",     # modrá
-            "success": "#28a745",  # zelená
-            "error": "#dc3545"     # červená
-        }
-        ikony = {
-            "info": "ℹ️",
-            "success": "✅",
-            "error": "❌"
-        }
+def zobraz_toast(self, text, typ="info", trvanie_ms=3000):
+    toast = QtWidgets.QLabel(self)
+    
+    farby = {
+        "info": "#007bff",     # modrá
+        "success": "#28a745",  # zelená
+        "error": "#dc3545"     # červená
+    }
+    ikony = {
+        "info": "ℹ️",
+        "success": "✅",
+        "error": "❌"
+    }
 
-        farba = farby.get(typ, "#333")
-        ikona = ikony.get(typ, "🔔")
+    farba = farby.get(typ, "#333")
+    ikona = ikony.get(typ, "🔔")
 
-        toast.setText(f"{ikona} {text}")
-        toast.setStyleSheet(f"""
-            background-color: {farba};
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 10pt;
-        """)
-        toast.setWindowFlags(QtCore.Qt.ToolTip)
-        toast.adjustSize()
-        toast.move(self.width() - toast.width() - 20, self.height() - toast.height() - 60)
-        toast.show()
+    toast.setText(f"{ikona} {text}")
 
-        QtCore.QTimer.singleShot(trvanie_ms, toast.close)
-        
+    # 🌟 Tieňový efekt
+    effect = QtWidgets.QGraphicsDropShadowEffect()
+    effect.setBlurRadius(15)
+    effect.setOffset(4, 4)
+    effect.setColor(QtGui.QColor(0, 0, 0, 160))  # jemný tieň
+    toast.setGraphicsEffect(effect)
+
+    toast.setStyleSheet(f"""
+        background-color: {farba};
+        color: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-size: 10pt;
+    """)
+    toast.setWindowFlags(QtCore.Qt.ToolTip)
+    toast.adjustSize()
+    toast.move(self.width() - toast.width() - 20, self.height() - toast.height() - 60)
+    toast.show()
+
+    QtCore.QTimer.singleShot(trvanie_ms, toast.close)
+
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
         pix = QtGui.QPixmap("logo.png")
