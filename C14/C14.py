@@ -29,33 +29,33 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 02")
-        self.setGeometry(100, 100, 800, 600)
+        self.resize(1000, 500)  # Počiatočná veľkosť 
+        self.setMinimumSize(800, 400)  # Minimálna veľkosť
 
         self.setStyleSheet("""
             QWidget {
-                background-color: #1a1a1a;
-                color: lime;
+                background-color: #f0f0f0;
+                color: #000000;
                 font-family: Consolas, monospace;
             }
             QPushButton {
-                background-color: #00ff00;
+                background-color: #00ccff;
                 color: black;
                 border-radius: 15px;
                 padding: 12px;
                 font-size: 12px;
-                min-width: 80px;
                 min-height: 50px;
             }
             QPushButton:hover {
-                background-color: #666;
+                background-color: #cccccc;
             }
-            QTextEdit {
-                background-color: #0d0d0d;
-                color: #00ff00;
+            QTextEdit#logBox {
+                background-color: #e0ffe0;
+                color: #008000;
                 font-family: Consolas;
             }
             QGroupBox {
-                border: 2px solid #00ffcc;
+                border: 2px solid #00ccff;
                 border-radius: 10px;
                 margin-top: 10px;
                 padding: 8px;
@@ -64,17 +64,32 @@ class MainWindow(QtWidgets.QMainWindow):
                 subcontrol-origin: margin;
                 subcontrol-position: top center;
                 padding: 0 6px;
-                color: #00ffff;
+                color: #0066cc;
+            }
+        
+            QGroupBox#wakeOnLanBox QLabel, QGroupBox#wakeOnLanBox QPushButton {
+                color: #ff6600;
+            }
+        
+            QGroupBox#indistarterBox QLabel, QGroupBox#indistarterBox QPushButton {
+                color: #0066cc;
             }
         """)
+
+
 
 
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
         self.grid_layout = QtWidgets.QGridLayout(self.main_layout)
 
+        self.grid_layout.setColumnStretch(0, 1)
+        self.grid_layout.setColumnStretch(1, 1)
+        self.grid_layout.setColumnStretch(2, 1)
+
         self.status_labels = {}
         self.log_box = QtWidgets.QTextEdit()
+        self.log_box.setObjectName("logBox")
         self.log_box.setReadOnly(True)
         self.log_box.setMinimumHeight(100)
         self.grid_layout.addWidget(self.log_box, 99, 0, 1, 3)
@@ -91,6 +106,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_atacama_section(self):
         group_box = QtWidgets.QGroupBox("ATACAMA")
+        group_box.setObjectName("indistarterBox")
         layout = QtWidgets.QGridLayout(group_box)
 
         zasuvky_group = QtWidgets.QGroupBox("Zásuvky")
@@ -159,6 +175,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_wake_on_lan_section(self):
         box = QtWidgets.QGroupBox("WAKE-ON-LAN")
+        box.setObjectName("wakeOnLanBox")
         lay = QtWidgets.QGridLayout(box)
         z1 = QtWidgets.QPushButton("Zapni AZ2000")
         z2 = QtWidgets.QPushButton("Zapni GM3000")
