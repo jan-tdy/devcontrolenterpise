@@ -30,12 +30,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.resize(1500, 700)  # väčšia šírka, menšia výška
         self.setMinimumSize(900, 400)  # aby sa to nedalo scvrknúť úplne
 
-        self.log_file_path = "/home/dpv/j44softapps-socketcontrol/log.txt"
-        if os.path.exists(self.log_file_path):
-            with open(self.log_file_path, "r") as f:
-                self.log_box.setPlainText(f.read())
-
-
         self.setStyleSheet("""
             QWidget {
                 background-color: #f0f0f0;
@@ -105,6 +99,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.log_box.setMinimumHeight(100)
         self.grid_layout.addWidget(self.log_box, 3, 0, 1, 2)
 
+        # Sem to patrí:
+        self.log_file_path = "/home/dpv/j44softapps-socketcontrol/log.txt"
+        if os.path.exists(self.log_file_path):
+            with open(self.log_file_path, "r") as f:
+                self.log_box.setPlainText(f.read())
+        
         group_atacama = self.init_atacama_section()
         group_wol     = self.init_wake_on_lan_section()
         group_ota     = self.init_ota_section()
