@@ -218,11 +218,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def init_ota_section(self):
-    but = QtWidgets.QPushButton("Aktualizovať program")
-    but.clicked.connect(self.aktualizuj_program)
-    layout.addWidget(but)
-
-    return box
+        but = QtWidgets.QPushButton("Aktualizovať program")
+        but.clicked.connect(self.aktualizuj_program)
+        layout.addWidget(but)
+    
+        return box
 
 def init_kamery_section(self):
     box = QtWidgets.QGroupBox("Kamery")
