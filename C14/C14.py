@@ -158,7 +158,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.grid_layout.addWidget(group_atacama, 0, 0)
         self.grid_layout.addWidget(group_ota, 0, 1)
-        self.grid_layout.addWidget(group_strecha, 1, 0)
+        self.grid_layout.addWidget(self.group_strecha, 1, 0)
         self.grid_layout.addWidget(group_kamery, 1, 1)
         self.grid_layout.addWidget(group_wol, 2, 1)
         self.grid_layout.addWidget(self.log_box, 3, 0, 1, 2)  # cez celú šírku
