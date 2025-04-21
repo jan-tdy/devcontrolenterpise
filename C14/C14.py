@@ -27,91 +27,109 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ovládanie Hvezdárne - C14")
-        self.resize(1500, 700)  # väčšia šírka, menšia výška
-        self.setMinimumSize(900, 400)  # aby sa to nedalo scvrknúť úplne
+        self.resize(1280, 720)
+        self.setMinimumSize(1024, 600)
+
 
         self.setStyleSheet("""
             QWidget {
                 background-color: #ffffff;
                 color: #212121;
                 font-family: 'Segoe UI', 'Roboto', sans-serif;
-                font-size: 10pt;
+                font-size: 9.5pt;
             }
         
             QPushButton {
-                background-color: #d4e157;  /* Limetková */
+                background-color: #d4e157;
                 color: #212121;
                 border: none;
-                border-radius: 12px;
-                padding: 8px 18px;
-                font-weight: bold;
-                transition: all 0.3s ease;
+                border-radius: 10px;
+                padding: 6px 14px;
+                font-weight: 600;
             }
         
             QPushButton:hover {
-                background-color: #c0ca33;  /* Odtieň pri hover */
+                background-color: #c0ca33;
+            }
+        
+            QPushButton:pressed {
+                background-color: #afb42b;
             }
         
             QTextEdit#logBox {
                 background-color: #f9fbe7;
                 color: #33691e;
                 border: 1px solid #cddc39;
-                border-radius: 12px;
-                padding: 10px;
+                border-radius: 10px;
+                padding: 8px;
+                font-size: 9pt;
             }
         
             QGroupBox {
-                background-color: #f0f4c3;
+                background-color: #f1f8e9;
                 border: 2px solid #cddc39;
-                border-radius: 16px;
-                padding: 14px;
-                margin-top: 10px;
+                border-radius: 14px;
+                padding: 12px;
+                margin-top: 8px;
             }
         
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
-                padding: 6px 14px;
+                padding: 4px 10px;
                 font-weight: bold;
-                color: #33691e;
-                background-color: transparent;
+                font-size: 9.5pt;
+                color: #558b2f;
             }
         
             QLabel {
                 color: #212121;
-                font-weight: normal;
+                font-weight: 500;
+                font-size: 9.5pt;
             }
         
-            QLineEdit, QComboBox, QCheckBox {
+            QLineEdit, QComboBox, QTextEdit, QCheckBox {
                 background-color: #ffffff;
                 border: 1px solid #cddc39;
                 border-radius: 8px;
                 padding: 6px;
+                font-size: 9pt;
             }
         
-            QLineEdit:focus, QComboBox:focus {
+            QLineEdit:focus, QComboBox:focus, QTextEdit:focus {
                 border: 2px solid #aeea00;
             }
         
             QCheckBox {
-                padding-left: 4px;
+                spacing: 6px;
             }
         
             QScrollBar:vertical, QScrollBar:horizontal {
                 background: #f1f8e9;
-                border-radius: 6px;
-                width: 10px;
+                border-radius: 5px;
+                width: 8px;
             }
         
             QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
                 background: #cddc39;
-                border-radius: 6px;
+                border-radius: 5px;
             }
         
             QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
                 background: #afb42b;
             }
+        
+            QToolTip {
+                background-color: #d4e157;
+                color: black;
+                border: 1px solid #cddc39;
+                padding: 6px;
+                border-radius: 5px;
+                font-size: 9pt;
+            }
         """)
+
+
 
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
@@ -138,12 +156,12 @@ class MainWindow(QtWidgets.QMainWindow):
         group_ota     = self.init_ota_section()
         group_kamery = self.init_kamery_section()
         
-        self.grid_layout.addWidget(group_atacama, 0, 0, 3, 1)  # Stĺpec 0, riadky 0-2
-        self.grid_layout.addWidget(group_ota,     0, 1)
-        self.grid_layout.addWidget(group_kamery,  1, 1)
-        self.grid_layout.addWidget(group_wol,     2, 1)
-        self.grid_layout.addWidget(self.log_box,  3, 0, 1, 2)  # cez stĺpce 0 a 1
-
+        self.grid_layout.addWidget(group_atacama, 0, 0)
+        self.grid_layout.addWidget(group_ota, 0, 1)
+        self.grid_layout.addWidget(group_strecha, 1, 0)
+        self.grid_layout.addWidget(group_kamery, 1, 1)
+        self.grid_layout.addWidget(group_wol, 2, 1)
+        self.grid_layout.addWidget(self.log_box, 3, 0, 1, 2)  # cez celú šírku
 
         self.aktualizuj_stav_zasuviek()
         self.status_timer = QtCore.QTimer()
