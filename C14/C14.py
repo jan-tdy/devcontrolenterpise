@@ -105,12 +105,10 @@ class MainWindow(QtWidgets.QMainWindow):
         group_atacama = self.init_atacama_section()
         group_wol     = self.init_wake_on_lan_section()
         group_ota     = self.init_ota_section()
-        group_readme  = self.init_readme_section()
         
         self.grid_layout.addWidget(group_atacama, 0, 0)
         self.grid_layout.addWidget(group_wol,     0, 1)
         self.grid_layout.addWidget(group_ota,     0, 2)
-        self.grid_layout.addWidget(group_readme,  1, 2)
         self.grid_layout.addWidget(self.log_box,  2, 0, 1, 3)
 
 
@@ -231,18 +229,6 @@ class MainWindow(QtWidgets.QMainWindow):
         return box
 
 
-    def init_readme_section(self):
-        btn = QtWidgets.QPushButton("ℹ️ README")
-        btn.setFixedWidth(100)
-        btn.clicked.connect(self.zobraz_readme)
-    
-        box = QtWidgets.QWidget()
-        layout = QtWidgets.QHBoxLayout(box)
-        layout.addWidget(btn)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setAlignment(QtCore.Qt.AlignRight)
-    
-        return box
 
 
     def zobraz_readme(self):
@@ -256,6 +242,7 @@ class MainWindow(QtWidgets.QMainWindow):
             dlg.exec_()
         else:
             self.loguj("README neexistuje.")
+
 
     def aktualizuj_program(self):
         try:
