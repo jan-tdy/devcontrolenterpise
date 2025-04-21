@@ -192,7 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
         elif s == "juh":
             p1, p2 = "crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF"
         elif s == "both":
-            p1, p2 = "crelay -s BITFT ALL ON", "crelay -s BITFT ALL OFF"
+            p1, p2 = "crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF", "crelay -s BITFT 2 ON","crelay -s BITFT 2 OFF"
         else:
             return
         try:
