@@ -32,6 +32,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.resize(1600, 800)  # väčšia šírka, menšia výška
         self.setMinimumSize(900, 400)  # aby sa to nedalo scvrknúť úplne
 
+        self.log_file_path = "/home/dpv/j44softapps-socketcontrol/log.txt"
+        if os.path.exists(self.log_file_path):
+            with open(self.log_file_path, "r") as f:
+                self.log_box.setPlainText(f.read())
+
+
         self.setStyleSheet("""
             QWidget {
                 background-color: #f0f0f0;
@@ -99,7 +105,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.log_box.setObjectName("logBox")
         self.log_box.setReadOnly(True)
         self.log_box.setMinimumHeight(100)
-        self.grid_layout.addWidget(self.log_box, 99, 0, 1, 3)
+        self.grid_layout.addWidget(self.log_box, 3, 0, 1, 2)
 
         group_atacama = self.init_atacama_section()
         group_wol     = self.init_wake_on_lan_section()
@@ -194,6 +200,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_wake_on_lan_section(self):
         box = QtWidgets.QGroupBox("WAKE-ON-LAN")
         box.setObjectName("wakeOnLanBox")
+        box.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         layout = QtWidgets.QGridLayout(box)
 
         z1 = QtWidgets.QPushButton("Zapni AZ2000")
@@ -222,8 +229,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_kamery_section(self):
         box = QtWidgets.QGroupBox("Kamery")
+        box.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         layout = QtWidgets.QVBoxLayout(box)
-
+    
         for txt, url in [
             ("Kamera Atacama", "http://172.20.20.134"),
             ("Kamera Astrofoto", "http://172.20.20.131")
@@ -231,33 +239,18 @@ class MainWindow(QtWidgets.QMainWindow):
             lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
             lbl.setOpenExternalLinks(True)
             layout.addWidget(lbl)
-
+    
         return box
-
-
-    def zobraz_readme(self):
-        if os.path.exists(README_CESTA):
-            with open(README_CESTA, "r") as f:
-                text = f.read()
-            dlg = QtWidgets.QMessageBox(self)
-            dlg.setWindowTitle("Rozšírený popis aplikácie")
-            dlg.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
-            dlg.setText(text[:5000] + ("..." if len(text) > 5000 else ""))
-            dlg.exec_()
-        else:
-            self.loguj("README neexistuje.")
-
 
     def aktualizuj_program(self):
         try:
             subprocess.run(f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py -o {PROGRAM_CESTA}", shell=True, check=True)
             subprocess.run(f"curl -fsSL {README_URL} -o {README_CESTA}", shell=True, check=True)
-            self.loguj("Program a README boli úspešne aktualizované.")
-            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu.")
+            self.loguj("Program a README boli úspešne aktualizované. Reštarujem program", "success")
             subprocess.Popen([sys.executable, PROGRAM_CESTA])
             sys.exit(0)
         except Exception as e:
-            self.loguj(f"Chyba pri aktualizácii: {e}")
+            self.loguj("Chyba pri aktualizácii! {e}", "error")
 
     def aktualizuj_stav_zasuviek(self):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
@@ -350,11 +343,56 @@ class MainWindow(QtWidgets.QMainWindow):
         except:
             self.loguj("Chyba WOL")
 
-    def loguj(self, msg):
+    def loguj(self, msg, typ="info"):
+        if "Aktualizujem stav zásuviek" in msg:
+            return  # nechceme ukladať tieto správy
+    
         t = QtCore.QTime.currentTime().toString()
-        self.log_box.append(f"[{t}] {msg}")
+        full_msg = f"[{t}] {msg}"
+    
+        self.log_box.append(full_msg)
         self.log_box.moveCursor(QtGui.QTextCursor.End)
+        self.zobraz_toast(msg, typ)
+    
+        try:
+            with open(self.log_file_path, "a") as f:
+                f.write(full_msg + "\n")
+        except Exception as e:
+            print("Chyba pri ukladaní logu:", e)
 
+
+    def zobraz_toast(self, text, typ="info", trvanie_ms=3000):
+        toast = QtWidgets.QLabel(self)
+        
+        farby = {
+            "info": "#007bff",     # modrá
+            "success": "#28a745",  # zelená
+            "error": "#dc3545"     # červená
+        }
+        ikony = {
+            "info": "ℹ️",
+            "success": "✅",
+            "error": "❌"
+        }
+
+        farba = farby.get(typ, "#333")
+        ikona = ikony.get(typ, "🔔")
+
+        toast.setText(f"{ikona} {text}")
+        toast.setStyleSheet(f"""
+            background-color: {farba};
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 10pt;
+        """)
+        toast.setWindowFlags(QtCore.Qt.ToolTip)
+        toast.adjustSize()
+        toast.move(self.width() - toast.width() - 20, self.height() - toast.height() - 60)
+        toast.show()
+
+        QtCore.QTimer.singleShot(trvanie_ms, toast.close)
+        
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
         pix = QtGui.QPixmap("logo.png")
