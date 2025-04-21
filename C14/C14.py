@@ -139,8 +139,9 @@ class MainWindow(QtWidgets.QMainWindow):
             label = QtWidgets.QLabel(name)
             zapnut = QtWidgets.QPushButton("Zapnúť")
             vypnut = QtWidgets.QPushButton("Vypnúť")
-            self.status_labels[name] = QtWidgets.QLabel()
-            self.status_labels[name].setPixmap(QtGui.QPixmap("led_def.png"))
+            led = QtWidgets.QLabel()
+            led.setPixmap(QtGui.QPixmap("led_def.png"))
+            self.status_labels[name] = led
         
             zapnut.clicked.connect(lambda _, n=cislo, l=name: self.ovladaj_zasuvku(n, True, l))
             vypnut.clicked.connect(lambda _, n=cislo, l=name: self.ovladaj_zasuvku(n, False, l))
@@ -148,7 +149,8 @@ class MainWindow(QtWidgets.QMainWindow):
             zasuvky_layout.addWidget(label, index, 0)
             zasuvky_layout.addWidget(zapnut, index, 1)
             zasuvky_layout.addWidget(vypnut, index, 2)
-        zasuvky_layout.addWidget(self.status_labels[name], index, 3)
+            zasuvky_layout.addWidget(led, index, 3)
+
 
 
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
@@ -228,19 +230,19 @@ class MainWindow(QtWidgets.QMainWindow):
         return box
 
 
-def init_kamery_section(self):
-    box = QtWidgets.QGroupBox("Kamery")
-    layout = QtWidgets.QVBoxLayout(box)
-
-    for txt, url in [
-        ("Kamera Atacama", "http://172.20.20.134"),
-        ("Kamera Astrofoto", "http://172.20.20.131")
-    ]:
-        lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
-        lbl.setOpenExternalLinks(True)
-        layout.addWidget(lbl)
-
-    return box
+    def init_kamery_section(self):
+        box = QtWidgets.QGroupBox("Kamery")
+        layout = QtWidgets.QVBoxLayout(box)
+    
+        for txt, url in [
+            ("Kamera Atacama", "http://172.20.20.134"),
+            ("Kamera Astrofoto", "http://172.20.20.131")
+        ]:
+            lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
+            lbl.setOpenExternalLinks(True)
+            layout.addWidget(lbl)
+    
+        return box
 
 
     def zobraz_readme(self):
