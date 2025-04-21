@@ -28,8 +28,8 @@ SSH_PASS2 = "otj0711"
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 02")
-        self.resize(1500, 600)  # väčšia šírka, menšia výška
+        self.setWindowTitle("Ovládanie Hvezdárne - C14")
+        self.resize(1600, 800)  # väčšia šírka, menšia výška
         self.setMinimumSize(900, 400)  # aby sa to nedalo scvrknúť úplne
 
         self.setStyleSheet("""
