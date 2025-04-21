@@ -93,7 +93,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.grid_layout.setColumnStretch(0, 1)
         self.grid_layout.setColumnStretch(1, 1)
-        # self.grid_layout.setColumnStretch(2, 1)
 
         self.status_labels = {}
         self.log_box = QtWidgets.QTextEdit()
@@ -107,11 +106,12 @@ class MainWindow(QtWidgets.QMainWindow):
         group_ota     = self.init_ota_section()
         group_kamery = self.init_kamery_section()
         
-        self.grid_layout.addWidget(group_atacama, 0, 0, 3, 1)  # Atacama vľavo cez 3 riadky
+        self.grid_layout.addWidget(group_atacama, 0, 0, 3, 1)  # Stĺpec 0, riadky 0-2
         self.grid_layout.addWidget(group_ota,     0, 1)
         self.grid_layout.addWidget(group_kamery,  1, 1)
         self.grid_layout.addWidget(group_wol,     2, 1)
-        self.grid_layout.addWidget(self.log_box,  3, 0, 1, 2)  # log_box cez obe stĺpce
+        self.grid_layout.addWidget(self.log_box,  3, 0, 1, 2)  # cez stĺpce 0 a 1
+
 
         self.aktualizuj_stav_zasuviek()
         self.status_timer = QtCore.QTimer()
