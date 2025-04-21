@@ -200,8 +200,8 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(ind_c14, 1, 0, 1, 3)
         layout.addWidget(ind_az, 2, 0, 1, 3)
 
-        strecha_group = QtWidgets.QGroupBox("Strecha")
-        strecha_layout = QtWidgets.QGridLayout(strecha_group)
+        self.group_strecha = QtWidgets.QGroupBox("Strecha")
+        strecha_layout = QtWidgets.QGridLayout(self.group_strecha)
         self.sever_button = QtWidgets.QPushButton("Sever")
         self.juh_button = QtWidgets.QPushButton("Juh")
         self.both_button = QtWidgets.QPushButton("Both")
@@ -211,7 +211,7 @@ class MainWindow(QtWidgets.QMainWindow):
         strecha_layout.addWidget(self.sever_button, 0, 0)
         strecha_layout.addWidget(self.juh_button, 0, 1)
         strecha_layout.addWidget(self.both_button, 0, 2)
-        layout.addWidget(strecha_group, 3, 0, 1, 3)
+        layout.addWidget(self.group_strecha, 3, 0, 1, 3)
 
         cas_group = QtWidgets.QGroupBox("Načasovať strechu")
         cas_layout = QtWidgets.QGridLayout(cas_group)
