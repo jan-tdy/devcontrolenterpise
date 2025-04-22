@@ -60,9 +60,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ovládanie Hvezdárne - C14")
-        screen = QtWidgets.QApplication.primaryScreen().availableGeometry()
-        w, h = int(screen.width() * 0.75), int(screen.height() * 0.45)
-        self.setGeometry(50, 50, w, h)
+        self.setGeometry(100, 100, 1000, 340)
+
 
     
         self.main_layout = QtWidgets.QWidget()
