@@ -246,6 +246,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.loguj(f"{msg}\n{tb}" if IS_DEV else msg, typ=typ)
 
     def spusti_stream_live(self, url, label, kamera_typ):
+        from threading import Thread
+        import time
+        import cv2
+    
         attr_running = f"kamera_running_{kamera_typ}"
         attr_thread = f"kamera_thread_{kamera_typ}"
     
@@ -279,14 +283,12 @@ class MainWindow(QtWidgets.QMainWindow):
             cap.release()
             label.clear()
             setattr(self, attr_running, False)
-
-    # Spustíme nový thread
-    thread = Thread(target=zobraz, daemon=True)
-    setattr(self, attr_thread, thread)
-    thread.start()
-
-
     
+        # Spustíme nový thread
+        thread = Thread(target=zobraz, daemon=True)
+        setattr(self, attr_thread, thread)
+        thread.start()
+
     def aktualizuj_stav_zasuviek(self):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
         for n, c in ZASUVKY.items():
