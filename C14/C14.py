@@ -30,7 +30,7 @@ class Toast(QtWidgets.QLabel):
         self.setStyleSheet(f"""
             QLabel {{
                 background-color: {'#135b13' if typ == 'success' else '#dc2525' if typ == 'error' else '#b9e9f1'};
-                color: {'#155724' if typ == 'success' else '#721c24' if typ == 'error' else '#0c5460'};
+                color: {'#155724' if typ == 'success' else '#721c24' if typ == 'error' else '#050c4d'};
                 border: 20px solid;
                 border-radius: 10px;
                 padding: 8px;
@@ -48,7 +48,7 @@ class Toast(QtWidgets.QLabel):
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ovládanie Hvezdárne - C14 - Version 25-3-2025 02")
+        self.setWindowTitle("Ovládanie Hvezdárne - C14")
         self.setGeometry(100, 100, 800, 600)
 
         self.main_layout = QtWidgets.QWidget()
@@ -193,7 +193,7 @@ class MainWindow(QtWidgets.QMainWindow):
             out = subprocess.check_output(cmd, shell=True)
             self.loguj(out.decode())
         except Exception as e:
-            self.loguj(f"Chyba: {e}")
+            self.loguj(f"Chyba: {e}", typ="error")
         self.zisti_stav_zasuvky(cis, lab)
 
     def spusti_indistarter_c14(self):
@@ -201,14 +201,14 @@ class MainWindow(QtWidgets.QMainWindow):
             out = subprocess.check_output("indistarter", shell=True)
             self.loguj(out.decode())
         except:
-            self.loguj("Chyba spustenia INDISTARTER C14")
+            self.loguj("Chyba spustenia INDISTARTER C14", typ="error")
 
     def spusti_indistarter_az2000(self):
         try:
             out = subprocess.check_output(f"ssh {SSH_USER2}@{AZ2000_IP} indistarter", shell=True)
             self.loguj(out.decode())
         except:
-            self.loguj("Chyba INDISTARTER AZ2000")
+            self.loguj("Chyba INDISTARTER AZ2000", typ="error")
 
     def ovladaj_strechu(self, s):
         if s == "sever":
@@ -224,7 +224,7 @@ class MainWindow(QtWidgets.QMainWindow):
             time.sleep(2)
             subprocess.run(p2, shell=True, check=True)
         except:
-            self.loguj(f"Chyba strecha {s}")
+            self.loguj(f"Chyba strecha {s}", typ="error")
 
     def toggle_casovac_strechy(self, st):
         e = (st == QtCore.Qt.Checked)
@@ -241,20 +241,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self.c_smer = self.cas_smer.currentText()
             self.c_time = dt
         except:
-            self.loguj("Chybný formát času")
+            self.loguj("Chybný formát času", typ="error")
 
     def skontroluj_cas_strechy(self):
         if self.c_act and datetime.now(pytz.utc) >= self.c_time:
             self.ovladaj_strechu(self.c_smer)
             self.c_act = False
-            self.loguj("Strecha aktivovaná časovačom")
+            self.loguj("Strecha aktivovaná časovačom", typ="success")
 
     def wake_on_lan(self, mac):
         try:
             send_magic_packet(mac)
-            self.loguj(f"WOL na {mac}")
+            self.loguj(f"WOL na {mac}", typ="success")
         except:
-            self.loguj("Chyba WOL")
+            self.loguj("Chyba WOL", typ="error")
 
     def aktualizuj_program(self):
         try:
@@ -266,14 +266,14 @@ class MainWindow(QtWidgets.QMainWindow):
             subprocess.run(curl_cmd, shell=True, check=True)
             self.loguj("Program bol úspešne aktualizovaný.")
             # Inform user and restart application
-            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu po zavretí tohto dialógu, ak nebude úspech naštartujte aplikáciu manuálne.")
+            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu po zavretí tohto dialógu, ak nebude úspech naštartujte aplikáciu manuálne.", typ="success")
             # Relaunch
             subprocess.Popen([sys.executable, PROGRAM_CESTA])
             sys.exit(0)
         except subprocess.CalledProcessError as e:
-            self.loguj(f"Chyba pri aktualizácii programu: {e}")
+            self.loguj(f"Chyba pri aktualizácii programu: {e}", typ="error")
         except Exception as e:
-            self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}")
+            self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}", typ="error")
             
     def loguj(self, msg, typ="info"):
         t = QtCore.QTime.currentTime().toString()
@@ -283,7 +283,7 @@ class MainWindow(QtWidgets.QMainWindow):
             with open("/home/dpv/j44softapps-socketcontrol/log.txt", "a") as f:
                 f.write(f"[{t}] {msg}\n")
         except Exception as e:
-            print("Chyba pri ukladaní logu:", e)
+            self.loguj(f"Chyba pri ukladaní logu: {e}", typ="error")
         toast = Toast(msg, typ=typ, parent=self)
         toast.show_()
 
