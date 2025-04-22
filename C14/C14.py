@@ -29,9 +29,9 @@ class Toast(QtWidgets.QLabel):
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         self.setStyleSheet(f"""
             QLabel {{
-                background-color: {'#d4edda' if typ == 'success' else '#f8d7da' if typ == 'error' else '#d1ecf1'};
+                background-color: {'#135b13' if typ == 'success' else '#dc2525' if typ == 'error' else '#b9e9f1'};
                 color: {'#155724' if typ == 'success' else '#721c24' if typ == 'error' else '#0c5460'};
-                border: 1px solid;
+                border: 20px solid;
                 border-radius: 10px;
                 padding: 8px;
                 font-size: 10pt;
