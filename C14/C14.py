@@ -62,24 +62,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Ovládanie Hvezdárne - C14")
         self.setGeometry(100, 100, 800, 600)
 
+        self.main_layout = QtWidgets.QWidget()
+        self.setCentralWidget(self.main_layout)
+        self.main_vbox = QtWidgets.QVBoxLayout(self.main_layout)
+
         if IS_DEV:
             self.developer_mode_label = QtWidgets.QLabel("🛠️ DEVELOPER MODE")
             self.developer_mode_label.setStyleSheet("color: red; font-weight: bold; font-size: 10pt;")
-            self.grid_layout.addWidget(self.developer_mode_label, 0, 2, alignment=QtCore.Qt.AlignRight)
-
-        self.main_layout = QtWidgets.QWidget()
-        self.setCentralWidget(self.main_layout)
-        self.grid_layout = QtWidgets.QGridLayout(self.main_layout)
+            self.main_vbox.addWidget(self.developer_mode_label, alignment=QtCore.Qt.AlignRight)
 
         self.status_labels = {}
         self.log_box = QtWidgets.QTextEdit()
         self.log_box.setReadOnly(True)
         self.log_box.setMinimumHeight(100)
-        self.grid_layout.addWidget(self.log_box, 99, 0, 1, 3)
 
         self.init_atacama_section()
         self.init_wake_on_lan_section()
         self.init_ota_section()
+
+        self.main_vbox.addWidget(self.log_box)
 
         self.aktualizuj_stav_zasuviek()
         self.status_timer = QtCore.QTimer()
@@ -89,7 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if IS_DEV:
             self.dev_funkcie_btn = QtWidgets.QPushButton("🔧 Odomknúť úpravu funkcií")
             self.dev_funkcie_btn.clicked.connect(self.odomkni_editor_funkcii)
-            self.grid_layout.addWidget(self.dev_funkcie_btn, 98, 0, 1, 3)
+            self.main_vbox.addWidget(self.dev_funkcie_btn)
 
 
     def init_atacama_section(self):
@@ -155,7 +156,7 @@ class MainWindow(QtWidgets.QMainWindow):
         cas_layout.addWidget(self.cas_btn, 3, 0, 1, 2)
         layout.addWidget(cas_group, 4, 0, 1, 3)
 
-        self.grid_layout.addWidget(group_box, 0, 0)
+        self.main_vbox.addWidget(group_box, 0, 0)
 
         # Timer strechy
         self.timer_strecha = QtCore.QTimer()
@@ -174,7 +175,7 @@ class MainWindow(QtWidgets.QMainWindow):
         z2.clicked.connect(lambda: self.wake_on_lan("00:c0:08:aa:35:12"))
         lay.addWidget(z1, 0, 0)
         lay.addWidget(z2, 0, 1)
-        self.grid_layout.addWidget(box, 0, 1)
+        self.main_vbox.addWidget(box, 0, 1)
 
     def init_ota_section(self):
         box = QtWidgets.QGroupBox("OTA Aktualizácie")
@@ -182,14 +183,14 @@ class MainWindow(QtWidgets.QMainWindow):
         but = QtWidgets.QPushButton("Aktualizovať program")
         but.clicked.connect(self.aktualizuj_program)
         lay.addWidget(but, 0, 0)
-        self.grid_layout.addWidget(box, 1, 0)
+        self.main_vbox.addWidget(box, 1, 0)
         for r, (txt, url) in enumerate([
             ("Kamera Atacama", "http://172.20.20.134"),
             ("Kamera Astrofoto", "http://172.20.20.131")
         ]):
             lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
             lbl.setOpenExternalLinks(True)
-            self.grid_layout.addWidget(lbl, 1 + r, 1)
+            self.main_vbox.addWidget(lbl, 1 + r, 1)
 
     def aktualizuj_stav_zasuviek(self):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
