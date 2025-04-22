@@ -224,6 +224,11 @@ class MainWindow(QtWidgets.QMainWindow):
         but.clicked.connect(self.aktualizuj_program)
         lay.addWidget(but, 0, 0, 1, 2)
     
+        # ➕ PRIDANÉ: Tlačidlo pre kontrolu kamery Atacama
+        control_btn = QtWidgets.QPushButton("🛠️ Control Atacama Camera")
+        control_btn.clicked.connect(lambda: subprocess.Popen(["python3", "/home/dpv/j44softapps-socketcontrol/C14-vigi.py"]))
+        lay.addWidget(control_btn, 1, 0, 1, 2)
+    
         rtsp_atacama = "rtsp://dpv-hard:lefton44@172.20.20.134:554/stream1"
         rtsp_astrofoto = "rtsp://dpv-hard:lefton44@172.20.20.131:554/stream1"
     
@@ -232,13 +237,14 @@ class MainWindow(QtWidgets.QMainWindow):
         kamera_btn1.clicked.connect(lambda: self.spusti_stream_live(rtsp_atacama, self.kamera_label_atacama, "atacama"))
         kamera_btn2.clicked.connect(lambda: self.spusti_stream_live(rtsp_astrofoto, self.kamera_label_astro, "astro"))
     
-        lay.addWidget(kamera_btn1, 1, 0)
-        lay.addWidget(kamera_btn2, 1, 1)
+        lay.addWidget(kamera_btn1, 2, 0)
+        lay.addWidget(kamera_btn2, 2, 1)
     
-        lay.addWidget(self.kamera_label_atacama, 2, 0)
-        lay.addWidget(self.kamera_label_astro, 2, 1)
+        lay.addWidget(self.kamera_label_atacama, 3, 0)
+        lay.addWidget(self.kamera_label_astro, 3, 1)
     
         return box
+
 
 
     def loguj_traceback(self, msg, typ="error"):
