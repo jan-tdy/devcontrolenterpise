@@ -191,23 +191,21 @@ class MainWindow(QtWidgets.QMainWindow):
         lay.addWidget(z2, 0, 1)
         return box  # tu bola chyba, mal si group_box
 
-
-
     def init_ota_section(self):
-        box = QtWidgets.QGroupBox("OTA Aktualizácie")
+        box = QtWidgets.QGroupBox("OTA Aktualizácie a Kamery")
         lay = QtWidgets.QGridLayout(box)
-        but = QtWidgets.QPushButton("Aktualizovať program")
-        but.clicked.connect(self.aktualizuj_program)
-        lay.addWidget(but, 0, 0)
-          # tu bola chyba, mal si group_box
     
-        for txt, url in [
-            ("Kamera Atacama", "http://172.20.20.134"),
-            ("Kamera Astrofoto", "http://172.20.20.131")
-        ]:
-            lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
-            lbl.setOpenExternalLinks(True)
-            self.right_column.addWidget(lbl)
+        but = QtWidgets.QPushButton("🔄 Aktualizovať program")
+        but.clicked.connect(self.aktualizuj_program)
+        lay.addWidget(but, 0, 0, 1, 2)
+    
+        kamera_btn1 = QtWidgets.QPushButton("📷 Stream Atacama")
+        kamera_btn2 = QtWidgets.QPushButton("📷 Stream Astrofoto")
+        kamera_btn1.clicked.connect(lambda: self.spusti_stream("rtsp://172.20.20.134:554/stream1"))
+        kamera_btn2.clicked.connect(lambda: self.spusti_stream("rtsp://172.20.20.131:554/stream1"))
+        lay.addWidget(kamera_btn1, 1, 0)
+        lay.addWidget(kamera_btn2, 1, 1)
+    
         return box
 
     def loguj_traceback(self, msg, typ="error"):
@@ -261,8 +259,6 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 self.loguj(f"Chyba pri ovládaní strechy {s}", typ="error")
 
-
-
     def spusti_indistarter_c14(self):
         try:
             out = subprocess.check_output("indistarter", shell=True)
@@ -306,6 +302,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loguj(f"WOL na {mac}", typ="success")
         except:
             self.loguj_traceback("Chyba WOL")
+
+    def spusti_stream(self, rtsp_url):
+        try:
+            subprocess.Popen(["ffplay", "-fflags", "nobuffer", "-i", rtsp_url])
+            self.loguj(f"Spustený RTSP stream: {rtsp_url}", typ="success")
+        except Exception:
+            self.loguj_traceback(f"Chyba pri spúšťaní streamu {rtsp_url}")
 
     def aktualizuj_program(self):
         try:
