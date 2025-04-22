@@ -41,9 +41,16 @@ class Toast(QtWidgets.QLabel):
         QtCore.QTimer.singleShot(3000, self.close)
 
     def show_(self):
-        screen = QtWidgets.QApplication.primaryScreen().availableGeometry()
-        self.move(screen.width() - self.width() - 20, screen.height() - self.height() - 20)
+        if self.parent():
+            parent_geom = self.parent().geometry()
+            x = parent_geom.x() + parent_geom.width() - self.width() - 20
+            y = parent_geom.y() + parent_geom.height() - self.height() - 20
+            self.move(x, y)
+        else:
+            screen = QtWidgets.QApplication.primaryScreen().availableGeometry()
+            self.move(screen.width() - self.width() - 20, screen.height() - self.height() - 20)
         self.show()
+
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
