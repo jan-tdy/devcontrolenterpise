@@ -156,7 +156,7 @@ class MainWindow(QtWidgets.QMainWindow):
         cas_layout.addWidget(self.cas_btn, 3, 0, 1, 2)
         layout.addWidget(cas_group, 4, 0, 1, 3)
 
-        self.main_vbox.addWidget(box)
+        self.main_vbox.addWidget(group_box)
 
         # Timer strechy
         self.timer_strecha = QtCore.QTimer()
