@@ -60,7 +60,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ovládanie Hvezdárne - C14")
-        self.setGeometry(100, 100, 1000, 340)
+        self.setGeometry(100, 100, 1000, 360)
+
 
 
     
