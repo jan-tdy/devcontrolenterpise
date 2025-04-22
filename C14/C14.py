@@ -73,7 +73,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if IS_DEV:
             self.developer_mode_label = QtWidgets.QLabel("🛠️ DEVELOPER MODE")
             self.developer_mode_label.setStyleSheet("color: red; font-weight: bold; font-size: 15pt;")
-            self.main_vbox.addWidget(self.developer_mode_label, alignment=QtCore.Qt.AlignRight)
+            self.right_column.addWidget(self.developer_mode_label, alignment=QtCore.Qt.AlignRight)
     
         self.status_labels = {}
         self.log_box = QtWidgets.QTextEdit()
@@ -103,7 +103,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if IS_DEV:
             self.dev_funkcie_btn = QtWidgets.QPushButton("🔧 Odomknúť úpravu funkcií")
             self.dev_funkcie_btn.clicked.connect(self.odomkni_editor_funkcii)
-            self.main_vbox.addWidget(self.dev_funkcie_btn)
+            self.right_column.addWidget(self.dev_funkcie_btn)
 
     def init_atacama_section(self):
         group_box = QtWidgets.QGroupBox("ATACAMA")
@@ -168,8 +168,6 @@ class MainWindow(QtWidgets.QMainWindow):
         cas_layout.addWidget(self.cas_btn, 3, 0, 1, 2)
         layout.addWidget(cas_group, 4, 0, 1, 3)
 
-        self.main_vbox.addWidget(group_box)
-
         # Timer strechy
         self.timer_strecha = QtCore.QTimer()
         self.timer_strecha.timeout.connect(self.skontroluj_cas_strechy)
@@ -200,7 +198,7 @@ class MainWindow(QtWidgets.QMainWindow):
         but = QtWidgets.QPushButton("Aktualizovať program")
         but.clicked.connect(self.aktualizuj_program)
         lay.addWidget(but, 0, 0)
-        return box  # tu bola chyba, mal si group_box
+          # tu bola chyba, mal si group_box
     
         for txt, url in [
             ("Kamera Atacama", "http://172.20.20.134"),
@@ -208,8 +206,8 @@ class MainWindow(QtWidgets.QMainWindow):
         ]:
             lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
             lbl.setOpenExternalLinks(True)
-            self.main_vbox.addWidget(lbl)  # tu si mal tiež zle pridané group_box
-
+            self.right_column.addWidget(lbl)
+        return box
 
 
     def aktualizuj_stav_zasuviek(self):
