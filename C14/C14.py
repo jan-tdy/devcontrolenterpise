@@ -62,6 +62,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Ovládanie Hvezdárne - C14")
         self.setGeometry(100, 100, 800, 600)
 
+        if IS_DEV:
+            self.developer_mode_label = QtWidgets.QLabel("🛠️ DEVELOPER MODE")
+            self.developer_mode_label.setStyleSheet("color: red; font-weight: bold; font-size: 10pt;")
+            self.grid_layout.addWidget(self.developer_mode_label, 0, 2, alignment=QtCore.Qt.AlignRight)
+
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
         self.grid_layout = QtWidgets.QGridLayout(self.main_layout)
@@ -80,6 +85,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
         self.status_timer.start(5 * 60 * 1000)
+
         if IS_DEV:
             self.dev_funkcie_btn = QtWidgets.QPushButton("🔧 Odomknúť úpravu funkcií")
             self.dev_funkcie_btn.clicked.connect(self.odomkni_editor_funkcii)
