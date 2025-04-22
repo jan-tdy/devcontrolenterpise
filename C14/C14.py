@@ -94,7 +94,7 @@ class MainWindow(QtWidgets.QMainWindow):
         try:
             with open("/home/dpv/j44softapps-socketcontrol/log.txt", "r") as f:
                 lines = f.readlines()
-                self.log_box.setPlainText("".join(reversed(lines)))
+                self.log_box.setPlainText("".join(lines))
         except:
             self.log_box.setPlainText("Nepodarilo sa načítať log.")
             if IS_DEV:
