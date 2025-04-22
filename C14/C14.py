@@ -9,6 +9,9 @@ from wakeonlan import send_magic_packet
 from datetime import datetime
 import pytz
 import traceback
+import cv2
+from threading import Thread
+
 
 IS_DEV = "-developer" in sys.argv
 
@@ -79,6 +82,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.log_box = QtWidgets.QTextEdit()
         self.log_box.setReadOnly(True)
         self.log_box.setMinimumHeight(100)
+
+        self.kamera_label_atacama = QtWidgets.QLabel()
+        self.kamera_label_astro = QtWidgets.QLabel()
+        self.kamera_thread_atacama = None
+        self.kamera_thread_astro = None
+        self.kamera_running_atacama = False
+        self.kamera_running_astro = False
+
     
         try:
             with open("/home/dpv/j44softapps-socketcontrol/log.txt", "r") as f:
@@ -191,26 +202,68 @@ class MainWindow(QtWidgets.QMainWindow):
         lay.addWidget(z2, 0, 1)
         return box  # tu bola chyba, mal si group_box
 
-    def init_ota_section(self):
-        box = QtWidgets.QGroupBox("OTA Aktualizácie a Kamery")
-        lay = QtWidgets.QGridLayout(box)
-    
-        but = QtWidgets.QPushButton("🔄 Aktualizovať program")
-        but.clicked.connect(self.aktualizuj_program)
-        lay.addWidget(but, 0, 0, 1, 2)
-    
-        kamera_btn1 = QtWidgets.QPushButton("📷 Stream Atacama")
-        kamera_btn2 = QtWidgets.QPushButton("📷 Stream Astrofoto")
-        kamera_btn1.clicked.connect(lambda: self.spusti_stream("rtsp://172.20.20.134:554/stream1"))
-        kamera_btn2.clicked.connect(lambda: self.spusti_stream("rtsp://172.20.20.131:554/stream1"))
-        lay.addWidget(kamera_btn1, 1, 0)
-        lay.addWidget(kamera_btn2, 1, 1)
-    
-        return box
+def init_ota_section(self):
+    box = QtWidgets.QGroupBox("OTA Aktualizácie a Kamery")
+    lay = QtWidgets.QGridLayout(box)
+
+    but = QtWidgets.QPushButton("🔄 Aktualizovať program")
+    but.clicked.connect(self.aktualizuj_program)
+    lay.addWidget(but, 0, 0, 1, 2)
+
+    rtsp_atacama = "rtsp://dpv-hard:lefton44@172.20.20.134:554/stream1"
+    rtsp_astrofoto = "rtsp://dpv-hard:lefton44@172.20.20.131:554/stream1"
+
+    kamera_btn1 = QtWidgets.QPushButton("📷 Stream Atacama")
+    kamera_btn2 = QtWidgets.QPushButton("📷 Stream Astrofoto")
+    kamera_btn1.clicked.connect(lambda: self.spusti_stream_live(rtsp_atacama, self.kamera_label_atacama, "atacama"))
+    kamera_btn2.clicked.connect(lambda: self.spusti_stream_live(rtsp_astrofoto, self.kamera_label_astro, "astro"))
+
+    lay.addWidget(kamera_btn1, 1, 0)
+    lay.addWidget(kamera_btn2, 1, 1)
+
+    lay.addWidget(self.kamera_label_atacama, 2, 0)
+    lay.addWidget(self.kamera_label_astro, 2, 1)
+
+    return box
+
 
     def loguj_traceback(self, msg, typ="error"):
         tb = traceback.format_exc()
         self.loguj(f"{msg}\n{tb}" if IS_DEV else msg, typ=typ)
+
+    def spusti_stream_live(self, url, label, kamera_typ):
+        def zobraz():
+            cap = cv2.VideoCapture(url)
+            if not cap.isOpened():
+                self.loguj(f"Nepodarilo sa otvoriť RTSP stream: {url}", typ="error")
+                return
+    
+            setattr(self, f"kamera_running_{kamera_typ}", True)
+    
+            while getattr(self, f"kamera_running_{kamera_typ}"):
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = rgb.shape
+                bytes_per_line = ch * w
+                qimg = QtGui.QImage(rgb.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+                pix = QtGui.QPixmap.fromImage(qimg).scaled(320, 240, QtCore.Qt.KeepAspectRatio)
+                label.setPixmap(pix)
+                time.sleep(0.05) 
+    
+            cap.release()
+            label.clear()
+    
+        # Stop if already running
+        setattr(self, f"kamera_running_{kamera_typ}", False)
+        time.sleep(0.5)
+    
+        # Start new thread
+        thread = Thread(target=zobraz, daemon=True)
+        setattr(self, f"kamera_thread_{kamera_typ}", thread)
+        thread.start()
+
     
     def aktualizuj_stav_zasuviek(self):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
@@ -469,7 +522,7 @@ except Exception as e:
 
     def nainstaluj_zavislosti():
         try:
-            subprocess.run("pip install pyqt5 wakeonlan pytz", shell=True)
+            subprocess.run("pip install pyqt5 wakeonlan pytz opencv-python", shell=True)
             QtWidgets.QMessageBox.information(bug_window, "OK", "Závislosti boli nainštalované.")
         except Exception as ex:
             QtWidgets.QMessageBox.critical(bug_window, "Chyba", f"Zlyhala inštalácia závislostí: {ex}")
