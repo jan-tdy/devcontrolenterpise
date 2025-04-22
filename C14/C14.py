@@ -8,6 +8,10 @@ import PyQt5.QtCore as QtCore
 from wakeonlan import send_magic_packet
 from datetime import datetime
 import pytz
+import traceback
+
+IS_DEV = "-developer" in sys.argv
+
 
 ZASUVKY = {
     "NOUT": 4,
@@ -76,6 +80,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
         self.status_timer.start(5 * 60 * 1000)
+        if IS_DEV:
+            self.dev_funkcie_btn = QtWidgets.QPushButton("🔧 Odomknúť úpravu funkcií")
+            self.dev_funkcie_btn.clicked.connect(self.odomkni_editor_funkcii)
+            self.grid_layout.addWidget(self.dev_funkcie_btn, 98, 0, 1, 3)
 
 
     def init_atacama_section(self):
@@ -282,6 +290,50 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}", typ="error")
             
+    def odomkni_editor_funkcii(self):
+        pin, ok = QtWidgets.QInputDialog.getText(self, "Developer PIN", "Zadaj PIN pre úpravu funkcií:", QtWidgets.QLineEdit.Password)
+        if ok and pin == "6589":
+            editor = QtWidgets.QDialog(self)
+            editor.setWindowTitle("Live úprava funkcií")
+            editor.resize(800, 500)
+            layout = QtWidgets.QVBoxLayout(editor)
+
+            info = QtWidgets.QLabel("Tu môžeš upraviť funkcie `ovladaj_strechu`, `ovladaj_zasuvku` a `aktualizuj_program`.\nZmeny sa prejavia po reštarte.")
+            layout.addWidget(info)
+
+            try:
+                with open(PROGRAM_CESTA, "r") as f:
+                    obsah = f.read()
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Chyba", f"Nepodarilo sa načítať súbor:\n{e}")
+                return
+
+            self.editor_area = QtWidgets.QPlainTextEdit()
+            self.editor_area.setPlainText(obsah)
+            layout.addWidget(self.editor_area)
+
+            btn_save = QtWidgets.QPushButton("💾 Uložiť zmeny")
+            btn_save.clicked.connect(self.uloz_zmeny_do_programu)
+            layout.addWidget(btn_save)
+
+            editor.exec_()
+        else:
+            self.loguj("Zlý PIN alebo zrušené", typ="error")
+
+    def uloz_zmeny_do_programu(self):
+        try:
+            with open(PROGRAM_CESTA, "w") as f:
+                f.write(self.editor_area.toPlainText())
+            QtWidgets.QMessageBox.information(
+                self, "Hotovo", "Zmeny boli uložené. Program sa teraz reštartuje."
+            )
+            # Reštart aplikácie
+            subprocess.Popen([sys.executable, PROGRAM_CESTA, "-developer"])
+            sys.exit(0)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Chyba", f"Nepodarilo sa uložiť:\n{e}")
+
+
     def loguj(self, msg, typ="info"):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
@@ -290,9 +342,13 @@ class MainWindow(QtWidgets.QMainWindow):
             with open("/home/dpv/j44softapps-socketcontrol/log.txt", "a") as f:
                 f.write(f"[{t}] {msg}\n")
         except Exception as e:
-            self.loguj(f"Chyba pri ukladaní logu: {e}", typ="error")
+            if IS_DEV:
+                print("Chyba pri ukladaní logu:", traceback.format_exc())
+            else:
+                print("Chyba pri ukladaní logu:", e)
         toast = Toast(msg, typ=typ, parent=self)
         toast.show_()
+
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
