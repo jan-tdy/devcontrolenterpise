@@ -116,6 +116,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self.dev_funkcie_btn = QtWidgets.QPushButton("🔧 Odomknúť úpravu funkcií")
             self.dev_funkcie_btn.clicked.connect(self.odomkni_editor_funkcii)
             self.right_column.addWidget(self.dev_funkcie_btn)
+            
+    def spusti_indistarter_c14(self):
+        try:
+            out = subprocess.check_output("indistarter", shell=True)
+            self.loguj(out.decode())
+        except:
+            self.loguj_traceback("Chyba spustenia INDISTARTER C14")
+
+    def spusti_indistarter_az2000(self):
+        try:
+            out = subprocess.check_output(f"ssh {SSH_USER2}@{AZ2000_IP} indistarter", shell=True)
+            self.loguj(out.decode())
+        except:
+            self.loguj_traceback("Chyba INDISTARTER AZ2000")
 
     def init_atacama_section(self):
         group_box = QtWidgets.QGroupBox("ATACAMA")
@@ -202,29 +216,29 @@ class MainWindow(QtWidgets.QMainWindow):
         lay.addWidget(z2, 0, 1)
         return box  # tu bola chyba, mal si group_box
 
-def init_ota_section(self):
-    box = QtWidgets.QGroupBox("OTA Aktualizácie a Kamery")
-    lay = QtWidgets.QGridLayout(box)
-
-    but = QtWidgets.QPushButton("🔄 Aktualizovať program")
-    but.clicked.connect(self.aktualizuj_program)
-    lay.addWidget(but, 0, 0, 1, 2)
-
-    rtsp_atacama = "rtsp://dpv-hard:lefton44@172.20.20.134:554/stream1"
-    rtsp_astrofoto = "rtsp://dpv-hard:lefton44@172.20.20.131:554/stream1"
-
-    kamera_btn1 = QtWidgets.QPushButton("📷 Stream Atacama")
-    kamera_btn2 = QtWidgets.QPushButton("📷 Stream Astrofoto")
-    kamera_btn1.clicked.connect(lambda: self.spusti_stream_live(rtsp_atacama, self.kamera_label_atacama, "atacama"))
-    kamera_btn2.clicked.connect(lambda: self.spusti_stream_live(rtsp_astrofoto, self.kamera_label_astro, "astro"))
-
-    lay.addWidget(kamera_btn1, 1, 0)
-    lay.addWidget(kamera_btn2, 1, 1)
-
-    lay.addWidget(self.kamera_label_atacama, 2, 0)
-    lay.addWidget(self.kamera_label_astro, 2, 1)
-
-    return box
+    def init_ota_section(self):
+        box = QtWidgets.QGroupBox("OTA Aktualizácie a Kamery")
+        lay = QtWidgets.QGridLayout(box)
+    
+        but = QtWidgets.QPushButton("🔄 Aktualizovať program")
+        but.clicked.connect(self.aktualizuj_program)
+        lay.addWidget(but, 0, 0, 1, 2)
+    
+        rtsp_atacama = "rtsp://dpv-hard:lefton44@172.20.20.134:554/stream1"
+        rtsp_astrofoto = "rtsp://dpv-hard:lefton44@172.20.20.131:554/stream1"
+    
+        kamera_btn1 = QtWidgets.QPushButton("📷 Stream Atacama")
+        kamera_btn2 = QtWidgets.QPushButton("📷 Stream Astrofoto")
+        kamera_btn1.clicked.connect(lambda: self.spusti_stream_live(rtsp_atacama, self.kamera_label_atacama, "atacama"))
+        kamera_btn2.clicked.connect(lambda: self.spusti_stream_live(rtsp_astrofoto, self.kamera_label_astro, "astro"))
+    
+        lay.addWidget(kamera_btn1, 1, 0)
+        lay.addWidget(kamera_btn2, 1, 1)
+    
+        lay.addWidget(self.kamera_label_atacama, 2, 0)
+        lay.addWidget(self.kamera_label_astro, 2, 1)
+    
+        return box
 
 
     def loguj_traceback(self, msg, typ="error"):
@@ -311,20 +325,6 @@ def init_ota_section(self):
                 self.loguj(f"Chyba pri ovládaní strechy {s}:\n{traceback.format_exc()}", typ="error")
             else:
                 self.loguj(f"Chyba pri ovládaní strechy {s}", typ="error")
-
-    def spusti_indistarter_c14(self):
-        try:
-            out = subprocess.check_output("indistarter", shell=True)
-            self.loguj(out.decode())
-        except:
-            self.loguj_traceback("Chyba spustenia INDISTARTER C14")
-
-    def spusti_indistarter_az2000(self):
-        try:
-            out = subprocess.check_output(f"ssh {SSH_USER2}@{AZ2000_IP} indistarter", shell=True)
-            self.loguj(out.decode())
-        except:
-            self.loguj_traceback("Chyba INDISTARTER AZ2000")
 
     def toggle_casovac_strechy(self, st):
         e = (st == QtCore.Qt.Checked)
