@@ -26,12 +26,12 @@ class Toast(QtWidgets.QLabel):
     def __init__(self, msg, typ="info", parent=None):
         super().__init__(msg, parent)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool)
-        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        # self.setAttribute(QtCore.Qt.WA_TranslucentBackground)  # ZAKOMENTOVANÉ
         self.setStyleSheet(f"""
             QLabel {{
                 background-color: {'#135b13' if typ == 'success' else '#dc2525' if typ == 'error' else '#b9e9f1'};
                 color: {'#155724' if typ == 'success' else '#721c24' if typ == 'error' else '#050c4d'};
-                border: 20px solid;
+                border: 2px solid black;
                 border-radius: 10px;
                 padding: 8px;
                 font-size: 10pt;
