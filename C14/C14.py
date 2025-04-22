@@ -175,7 +175,8 @@ class MainWindow(QtWidgets.QMainWindow):
         z2.clicked.connect(lambda: self.wake_on_lan("00:c0:08:aa:35:12"))
         lay.addWidget(z1, 0, 0)
         lay.addWidget(z2, 0, 1)
-        self.main_vbox.addWidget(box)
+        self.main_vbox.addWidget(box)  # tu bola chyba, mal si group_box
+
 
 
     def init_ota_section(self):
@@ -184,15 +185,16 @@ class MainWindow(QtWidgets.QMainWindow):
         but = QtWidgets.QPushButton("Aktualizovať program")
         but.clicked.connect(self.aktualizuj_program)
         lay.addWidget(but, 0, 0)
-        self.main_vbox.addWidget(box)
-        
+        self.main_vbox.addWidget(box)  # tu bola chyba, mal si group_box
+    
         for txt, url in [
             ("Kamera Atacama", "http://172.20.20.134"),
             ("Kamera Astrofoto", "http://172.20.20.131")
         ]:
             lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
             lbl.setOpenExternalLinks(True)
-            self.main_vbox.addWidget(lbl)
+            self.main_vbox.addWidget(lbl)  # tu si mal tiež zle pridané group_box
+
 
 
     def aktualizuj_stav_zasuviek(self):
