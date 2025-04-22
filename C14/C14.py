@@ -413,7 +413,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         for i in range(101):
             self.pr.setValue(i)
             QtWidgets.qApp.processEvents()
-            time.sleep(0.010)
+            time.sleep(0.100)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
@@ -436,6 +436,7 @@ except Exception as e:
     error_label = QtWidgets.QLabel(
         "Nastal problém pri štarte hlavného okna aplikácie.\n"
         "Pravdepodobne je chyba v aktualizovanom kóde.\n"
+        "Ak nieste vývojár kódu obráťťe sa na JaPySoft.\n"
     )
     error_label.setStyleSheet("color: red; font-size: 11pt; font-weight: bold;")
     layout.addWidget(error_label)
