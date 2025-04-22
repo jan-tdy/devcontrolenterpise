@@ -156,7 +156,7 @@ class MainWindow(QtWidgets.QMainWindow):
         cas_layout.addWidget(self.cas_btn, 3, 0, 1, 2)
         layout.addWidget(cas_group, 4, 0, 1, 3)
 
-        self.main_vbox.addWidget(group_box)
+        self.main_vbox.addWidget(box)
 
         # Timer strechy
         self.timer_strecha = QtCore.QTimer()
@@ -175,7 +175,8 @@ class MainWindow(QtWidgets.QMainWindow):
         z2.clicked.connect(lambda: self.wake_on_lan("00:c0:08:aa:35:12"))
         lay.addWidget(z1, 0, 0)
         lay.addWidget(z2, 0, 1)
-        self.main_vbox.addWidget(group_box)
+        self.main_vbox.addWidget(box)
+
 
     def init_ota_section(self):
         box = QtWidgets.QGroupBox("OTA Aktualizácie")
@@ -183,14 +184,16 @@ class MainWindow(QtWidgets.QMainWindow):
         but = QtWidgets.QPushButton("Aktualizovať program")
         but.clicked.connect(self.aktualizuj_program)
         lay.addWidget(but, 0, 0)
-        self.main_vbox.addWidget(group_box)
-        for r, (txt, url) in enumerate([
+        self.main_vbox.addWidget(box)
+        
+        for txt, url in [
             ("Kamera Atacama", "http://172.20.20.134"),
             ("Kamera Astrofoto", "http://172.20.20.131")
-        ]):
+        ]:
             lbl = QtWidgets.QLabel(f"<a href='{url}'>{txt}</a>")
             lbl.setOpenExternalLinks(True)
-            self.main_vbox.addWidget(group_box)
+            self.main_vbox.addWidget(lbl)
+
 
     def aktualizuj_stav_zasuviek(self):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
