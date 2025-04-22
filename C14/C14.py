@@ -246,15 +246,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.loguj(f"{msg}\n{tb}" if IS_DEV else msg, typ=typ)
 
     def spusti_stream_live(self, url, label, kamera_typ):
+        attr_running = f"kamera_running_{kamera_typ}"
+        attr_thread = f"kamera_thread_{kamera_typ}"
+    
+        if getattr(self, attr_running):
+            # Ak beží, zastavíme ho
+            setattr(self, attr_running, False)
+            self.loguj(f"Zastavený RTSP stream: {kamera_typ}", typ="info")
+            return
+    
         def zobraz():
             cap = cv2.VideoCapture(url)
             if not cap.isOpened():
                 self.loguj(f"Nepodarilo sa otvoriť RTSP stream: {url}", typ="error")
                 return
     
-            setattr(self, f"kamera_running_{kamera_typ}", True)
+            setattr(self, attr_running, True)
+            self.loguj(f"Spustený RTSP stream: {kamera_typ}", typ="success")
     
-            while getattr(self, f"kamera_running_{kamera_typ}"):
+            while getattr(self, attr_running):
                 ret, frame = cap.read()
                 if not ret:
                     break
@@ -264,19 +274,17 @@ class MainWindow(QtWidgets.QMainWindow):
                 qimg = QtGui.QImage(rgb.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
                 pix = QtGui.QPixmap.fromImage(qimg).scaled(320, 240, QtCore.Qt.KeepAspectRatio)
                 label.setPixmap(pix)
-                time.sleep(0.05) 
+                time.sleep(0.05)
     
             cap.release()
             label.clear()
-    
-        # Stop if already running
-        setattr(self, f"kamera_running_{kamera_typ}", False)
-        time.sleep(0.5)
-    
-        # Start new thread
-        thread = Thread(target=zobraz, daemon=True)
-        setattr(self, f"kamera_thread_{kamera_typ}", thread)
-        thread.start()
+            setattr(self, attr_running, False)
+
+    # Spustíme nový thread
+    thread = Thread(target=zobraz, daemon=True)
+    setattr(self, attr_thread, thread)
+    thread.start()
+
 
     
     def aktualizuj_stav_zasuviek(self):
