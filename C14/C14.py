@@ -80,13 +80,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.log_box.setReadOnly(True)
         self.log_box.setMinimumHeight(100)
     
-        # 🔁 Načítanie existujúceho logu
         try:
             with open("/home/dpv/j44softapps-socketcontrol/log.txt", "r") as f:
                 lines = f.readlines()
                 self.log_box.setPlainText("".join(reversed(lines)))
-        except Exception as e:
-            self.log_box.setPlainText(f"Nepodarilo sa načítať log: {e}")
+        except:
+            self.log_box.setPlainText("Nepodarilo sa načítať log.")
+            if IS_DEV:
+                print(traceback.format_exc())
     
         self.left_column.addWidget(self.init_atacama_section())
         
@@ -209,7 +210,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.right_column.addWidget(lbl)
         return box
 
-
+    def loguj_traceback(self, msg, typ="error"):
+        tb = traceback.format_exc()
+        self.loguj(f"{msg}\n{tb}" if IS_DEV else msg, typ=typ)
+    
     def aktualizuj_stav_zasuviek(self):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
         for n, c in ZASUVKY.items():
@@ -225,8 +229,10 @@ class MainWindow(QtWidgets.QMainWindow):
             )
             self.status_labels[lab].setPixmap(QtGui.QPixmap(pix))
         except:
+            self.loguj_traceback(f"Chyba zisťovania stavu zásuvky {lab}")
             self.status_labels[lab].setPixmap(QtGui.QPixmap("led_def.png"))
 
+            
     def ovladaj_strechu(self, s):
         PRIKAZY_STRECHA = {
             "sever": ["crelay -s BITFT 2 ON", "crelay -s BITFT 2 OFF"],
@@ -250,7 +256,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 subprocess.run(pr, shell=True, check=True)
             self.loguj(f"Strecha ovládaná ({s})", typ="success")
         except Exception as e:
-            self.loguj(f"Chyba pri ovládaní strechy {s}: {e}", typ="error")
+            if IS_DEV:
+                self.loguj(f"Chyba pri ovládaní strechy {s}:\n{traceback.format_exc()}", typ="error")
+            else:
+                self.loguj(f"Chyba pri ovládaní strechy {s}", typ="error")
+
 
 
     def spusti_indistarter_c14(self):
@@ -258,30 +268,14 @@ class MainWindow(QtWidgets.QMainWindow):
             out = subprocess.check_output("indistarter", shell=True)
             self.loguj(out.decode())
         except:
-            self.loguj("Chyba spustenia INDISTARTER C14", typ="error")
+            self.loguj_traceback("Chyba spustenia INDISTARTER C14")
 
     def spusti_indistarter_az2000(self):
         try:
             out = subprocess.check_output(f"ssh {SSH_USER2}@{AZ2000_IP} indistarter", shell=True)
             self.loguj(out.decode())
         except:
-            self.loguj("Chyba INDISTARTER AZ2000", typ="error")
-
-    def ovladaj_strechu(self, s):
-        if s == "sever":
-            p1, p2 = "crelay -s BITFT 2 ON", "crelay -s BITFT 2 OFF"
-        elif s == "juh":
-            p1, p2 = "crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF"
-        elif s == "both":
-            p1, p2 = "crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF", "crelay -s BITFT 2 ON","crelay -s BITFT 2 OFF"
-        else:
-            return
-        try:
-            subprocess.run(p1, shell=True, check=True)
-            time.sleep(2)
-            subprocess.run(p2, shell=True, check=True)
-        except:
-            self.loguj(f"Chyba strecha {s}", typ="error")
+            self.loguj_traceback("Chyba INDISTARTER AZ2000")
 
     def toggle_casovac_strechy(self, st):
         e = (st == QtCore.Qt.Checked)
@@ -298,7 +292,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.c_smer = self.cas_smer.currentText()
             self.c_time = dt
         except:
-            self.loguj("Chybný formát času", typ="error")
+            self.loguj_traceback("Chybný formát času")
 
     def skontroluj_cas_strechy(self):
         if self.c_act and datetime.now(pytz.utc) >= self.c_time:
@@ -311,26 +305,23 @@ class MainWindow(QtWidgets.QMainWindow):
             send_magic_packet(mac)
             self.loguj(f"WOL na {mac}", typ="success")
         except:
-            self.loguj("Chyba WOL", typ="error")
+            self.loguj_traceback("Chyba WOL")
 
     def aktualizuj_program(self):
         try:
-            # Download and replace the script
             curl_cmd = (
                 f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"
                 f" -o {PROGRAM_CESTA}"
             )
             subprocess.run(curl_cmd, shell=True, check=True)
             self.loguj("Program bol úspešne aktualizovaný.")
-            # Inform user and restart application
             QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu po zavretí tohto dialógu, ak nebude úspech naštartujte aplikáciu manuálne.", typ="success")
-            # Relaunch
             subprocess.Popen([sys.executable, PROGRAM_CESTA])
             sys.exit(0)
         except subprocess.CalledProcessError as e:
-            self.loguj(f"Chyba pri aktualizácii programu: {e}", typ="error")
-        except Exception as e:
-            self.loguj(f"Neočakávaná chyba pri aktualizácii: {e}", typ="error")
+            self.loguj_traceback(f"Chyba pri aktualizácii programu: {e}")
+        except Exception:
+            self.loguj_traceback("Neočakávaná chyba pri aktualizácii")
             
     def odomkni_editor_funkcii(self):
         pin, ok = QtWidgets.QInputDialog.getText(self, "Developer PIN", "Zadaj PIN pre úpravu funkcií:", QtWidgets.QLineEdit.Password)
@@ -369,11 +360,10 @@ class MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.information(
                 self, "Hotovo", "Zmeny boli uložené. Program sa teraz reštartuje."
             )
-            # Reštart aplikácie
             subprocess.Popen([sys.executable, PROGRAM_CESTA, "-developer"])
             sys.exit(0)
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Chyba", f"Nepodarilo sa uložiť:\n{e}")
+        except:
+            self.loguj_traceback("Nepodarilo sa uložiť úpravy")
 
 
     def loguj(self, msg, typ="info"):
