@@ -227,14 +227,31 @@ class MainWindow(QtWidgets.QMainWindow):
         except:
             self.status_labels[lab].setPixmap(QtGui.QPixmap("led_def.png"))
 
-    def ovladaj_zasuvku(self, cis, on, lab):
-        cmd = f"sispmctl -{'o' if on else 'f'} {cis}"
+    def ovladaj_strechu(self, s):
+        PRIKAZY_STRECHA = {
+            "sever": ["crelay -s BITFT 2 ON", "crelay -s BITFT 2 OFF"],
+            "juh": ["crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF"],
+            "both": [
+                "crelay -s BITFT 1 ON", "crelay -s BITFT 2 ON",
+                "crelay -s BITFT 1 OFF", "crelay -s BITFT 2 OFF"
+            ]
+        }
+
+        prikazy = PRIKAZY_STRECHA.get(s)
+        if not prikazy:
+            self.loguj(f"Neznámy smer strechy: {s}", typ="error")
+            return
+
         try:
-            out = subprocess.check_output(cmd, shell=True)
-            self.loguj(out.decode())
+            for pr in prikazy[:len(prikazy)//2]:
+                subprocess.run(pr, shell=True, check=True)
+            time.sleep(2)
+            for pr in prikazy[len(prikazy)//2:]:
+                subprocess.run(pr, shell=True, check=True)
+            self.loguj(f"Strecha ovládaná ({s})", typ="success")
         except Exception as e:
-            self.loguj(f"Chyba: {e}", typ="error")
-        self.zisti_stav_zasuvky(cis, lab)
+            self.loguj(f"Chyba pri ovládaní strechy {s}: {e}", typ="error")
+
 
     def spusti_indistarter_c14(self):
         try:
