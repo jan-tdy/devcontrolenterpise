@@ -57,48 +57,48 @@ class Toast(QtWidgets.QLabel):
 
 
 class MainWindow(QtWidgets.QMainWindow):
-def __init__(self):
-    super().__init__()
-    self.setWindowTitle("Ovládanie Hvezdárne - C14")
-    self.setGeometry(100, 100, 1000, 420)
-
-    self.main_layout = QtWidgets.QWidget()
-    self.setCentralWidget(self.main_layout)
-    self.main_vbox = QtWidgets.QVBoxLayout(self.main_layout)
-
-    if IS_DEV:
-        self.developer_mode_label = QtWidgets.QLabel("🛠️ DEVELOPER MODE")
-        self.developer_mode_label.setStyleSheet("color: red; font-weight: bold; font-size: 15pt;")
-        self.main_vbox.addWidget(self.developer_mode_label, alignment=QtCore.Qt.AlignRight)
-
-    self.status_labels = {}
-    self.log_box = QtWidgets.QTextEdit()
-    self.log_box.setReadOnly(True)
-    self.log_box.setMinimumHeight(100)
-
-    # 🔁 Načítanie existujúceho logu
-    try:
-        with open("/home/dpv/j44softapps-socketcontrol/log.txt", "r") as f:
-            lines = f.readlines()
-            self.log_box.setPlainText("".join(reversed(lines)))
-    except Exception as e:
-        self.log_box.setPlainText(f"Nepodarilo sa načítať log: {e}")
-
-    self.init_atacama_section()
-    self.init_wake_on_lan_section()
-    self.init_ota_section()
-
-    self.main_vbox.addWidget(self.log_box)
-
-    self.aktualizuj_stav_zasuviek()
-    self.status_timer = QtCore.QTimer()
-    self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
-    self.status_timer.start(5 * 60 * 1000)
-
-    if IS_DEV:
-        self.dev_funkcie_btn = QtWidgets.QPushButton("🔧 Odomknúť úpravu funkcií")
-        self.dev_funkcie_btn.clicked.connect(self.odomkni_editor_funkcii)
-        self.main_vbox.addWidget(self.dev_funkcie_btn)
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Ovládanie Hvezdárne - C14")
+        self.setGeometry(100, 100, 1000, 420)
+    
+        self.main_layout = QtWidgets.QWidget()
+        self.setCentralWidget(self.main_layout)
+        self.main_vbox = QtWidgets.QVBoxLayout(self.main_layout)
+    
+        if IS_DEV:
+            self.developer_mode_label = QtWidgets.QLabel("🛠️ DEVELOPER MODE")
+            self.developer_mode_label.setStyleSheet("color: red; font-weight: bold; font-size: 15pt;")
+            self.main_vbox.addWidget(self.developer_mode_label, alignment=QtCore.Qt.AlignRight)
+    
+        self.status_labels = {}
+        self.log_box = QtWidgets.QTextEdit()
+        self.log_box.setReadOnly(True)
+        self.log_box.setMinimumHeight(100)
+    
+        # 🔁 Načítanie existujúceho logu
+        try:
+            with open("/home/dpv/j44softapps-socketcontrol/log.txt", "r") as f:
+                lines = f.readlines()
+                self.log_box.setPlainText("".join(reversed(lines)))
+        except Exception as e:
+            self.log_box.setPlainText(f"Nepodarilo sa načítať log: {e}")
+    
+        self.init_atacama_section()
+        self.init_wake_on_lan_section()
+        self.init_ota_section()
+    
+        self.main_vbox.addWidget(self.log_box)
+    
+        self.aktualizuj_stav_zasuviek()
+        self.status_timer = QtCore.QTimer()
+        self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
+        self.status_timer.start(5 * 60 * 1000)
+    
+        if IS_DEV:
+            self.dev_funkcie_btn = QtWidgets.QPushButton("🔧 Odomknúť úpravu funkcií")
+            self.dev_funkcie_btn.clicked.connect(self.odomkni_editor_funkcii)
+            self.main_vbox.addWidget(self.dev_funkcie_btn)
 
     def init_atacama_section(self):
         group_box = QtWidgets.QGroupBox("ATACAMA")
