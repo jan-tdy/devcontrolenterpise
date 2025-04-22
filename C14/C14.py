@@ -60,11 +60,20 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ovládanie Hvezdárne - C14")
-        self.setGeometry(100, 100, 1000, 360)
+        screen_geometry = QtWidgets.QApplication.desktop().availableGeometry()
+        screen_width = screen_geometry.width()
+        screen_height = screen_geometry.height()
+        
+        # Nastav rozumné rozmery: šírka 90% obrazovky, výška max 80%
+        window_width = int(screen_width * 0.9)
+        window_height = int(screen_height * 0.8)
+        
+        self.resize(window_width, window_height)
+        self.move(
+            (screen_width - window_width) // 2,
+            (screen_height - window_height) // 2
+        )
 
-
-
-    
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
         self.main_vbox = QtWidgets.QVBoxLayout(self.main_layout)
