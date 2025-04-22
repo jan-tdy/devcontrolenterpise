@@ -62,7 +62,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("Ovládanie Hvezdárne - C14")
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
-        self.main_vbox = QtWidgets.QVBoxLayout(self.main_layout)
+
+        self.main_hbox = QtWidgets.QHBoxLayout(self.main_layout)
+        self.left_column = QtWidgets.QVBoxLayout()
+        self.right_column = QtWidgets.QVBoxLayout()
+        self.main_hbox.addLayout(self.left_column)
+        self.main_hbox.addLayout(self.right_column)
+
     
         if IS_DEV:
             self.developer_mode_label = QtWidgets.QLabel("🛠️ DEVELOPER MODE")
@@ -82,11 +88,12 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             self.log_box.setPlainText(f"Nepodarilo sa načítať log: {e}")
     
-        self.init_atacama_section()
-        self.init_wake_on_lan_section()
-        self.init_ota_section()
-    
-        self.main_vbox.addWidget(self.log_box)
+        self.left_column.addWidget(self.init_atacama_section())
+        
+        self.right_column.addWidget(self.init_wake_on_lan_section())
+        self.right_column.addWidget(self.init_ota_section())
+        self.right_column.addWidget(self.log_box)
+
     
         self.aktualizuj_stav_zasuviek()
         self.status_timer = QtCore.QTimer()
@@ -171,6 +178,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.c_smer = None
         self.c_time = None
 
+        return group_box
+
+
     def init_wake_on_lan_section(self):
         box = QtWidgets.QGroupBox("WAKE-ON-LAN")
         lay = QtWidgets.QGridLayout(box)
@@ -180,7 +190,7 @@ class MainWindow(QtWidgets.QMainWindow):
         z2.clicked.connect(lambda: self.wake_on_lan("00:c0:08:aa:35:12"))
         lay.addWidget(z1, 0, 0)
         lay.addWidget(z2, 0, 1)
-        self.main_vbox.addWidget(box)  # tu bola chyba, mal si group_box
+        return box  # tu bola chyba, mal si group_box
 
 
 
@@ -190,7 +200,7 @@ class MainWindow(QtWidgets.QMainWindow):
         but = QtWidgets.QPushButton("Aktualizovať program")
         but.clicked.connect(self.aktualizuj_program)
         lay.addWidget(but, 0, 0)
-        self.main_vbox.addWidget(box)  # tu bola chyba, mal si group_box
+        return box  # tu bola chyba, mal si group_box
     
         for txt, url in [
             ("Kamera Atacama", "http://172.20.20.134"),
