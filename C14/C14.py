@@ -12,9 +12,7 @@ import traceback
 import cv2
 from threading import Thread
 
-
 IS_DEV = "-developer" in sys.argv
-
 
 ZASUVKY = {
     "NOUT": 4,
@@ -33,7 +31,6 @@ class Toast(QtWidgets.QLabel):
     def __init__(self, msg, typ="info", parent=None):
         super().__init__(msg, parent)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool)
-        # self.setAttribute(QtCore.Qt.WA_TranslucentBackground)  # ZAKOMENTOVANÉ
         self.setStyleSheet(f"""
             QLabel {{
                 background-color: {'#135b13' if typ == 'success' else '#dc2525' if typ == 'error' else '#b9e9f1'};
@@ -71,7 +68,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.right_column = QtWidgets.QVBoxLayout()
         self.main_hbox.addLayout(self.left_column)
         self.main_hbox.addLayout(self.right_column)
-
     
         if IS_DEV:
             self.developer_mode_label = QtWidgets.QLabel("🛠️ DEVELOPER MODE")
@@ -89,7 +85,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.kamera_thread_astro = None
         self.kamera_running_atacama = False
         self.kamera_running_astro = False
-
     
         try:
             with open("/home/dpv/j44softapps-socketcontrol/log.txt", "r") as f:
@@ -101,11 +96,9 @@ class MainWindow(QtWidgets.QMainWindow):
                 print(traceback.format_exc())
     
         self.left_column.addWidget(self.init_atacama_section())
-        
         self.right_column.addWidget(self.init_wake_on_lan_section())
         self.right_column.addWidget(self.init_ota_section())
         self.right_column.addWidget(self.log_box)
-
     
         self.aktualizuj_stav_zasuviek()
         self.status_timer = QtCore.QTimer()
@@ -204,7 +197,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         return group_box
 
-
     def init_wake_on_lan_section(self):
         box = QtWidgets.QGroupBox("WAKE-ON-LAN")
         lay = QtWidgets.QGridLayout(box)
@@ -244,8 +236,6 @@ class MainWindow(QtWidgets.QMainWindow):
         lay.addWidget(self.kamera_label_astro, 3, 1)
     
         return box
-
-
 
     def loguj_traceback(self, msg, typ="error"):
         tb = traceback.format_exc()
@@ -313,7 +303,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loguj_traceback(f"Chyba zisťovania stavu zásuvky {lab}")
             self.status_labels[lab].setPixmap(QtGui.QPixmap("led_def.png"))
 
-            
     def ovladaj_strechu(self, s):
         PRIKAZY_STRECHA = {
             "sever": ["crelay -s BITFT 2 ON", "crelay -s BITFT 2 OFF"],
@@ -437,7 +426,6 @@ class MainWindow(QtWidgets.QMainWindow):
         except:
             self.loguj_traceback("Nepodarilo sa uložiť úpravy")
 
-
     def loguj(self, msg, typ="info"):
         t = QtCore.QTime.currentTime().toString()
         self.log_box.append(f"[{t}] {msg}")
@@ -452,7 +440,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 print("Chyba pri ukladaní logu:", e)
         toast = Toast(msg, typ=typ, parent=self)
         toast.show_()
-
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
