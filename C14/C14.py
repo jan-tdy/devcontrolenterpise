@@ -289,7 +289,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
         for n, c in ZASUVKY.items():
             self.zisti_stav_zasuvky(c, n)
-
+    def ovladaj_zasuvku(self, cis, on, lab):
+        cmd = f"sispmctl -{'o' if on else 'f'} {cis}"
+        try:
+            out = subprocess.check_output(cmd, shell=True)
+            self.loguj(out.decode())
+        except Exception as e:
+            self.loguj(f"Chyba: {e}")
+        self.zisti_stav_zasuvky(cis, lab)
+        
     def zisti_stav_zasuvky(self, cis, lab):
         try:
             out = subprocess.check_output(f"sispmctl -nqg {cis}", shell=True, text=True).strip()
