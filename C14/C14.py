@@ -13,7 +13,7 @@ import cv2
 from threading import Thread
 
 IS_DEV = "-developer" in sys.argv
-IS_FLAG1 = "-flag1" in sys.argv
+IS_FLAG1 = "-flag1" in sys.argv #add new method
 
 ZASUVKY = {
     "NOUT": 4,
