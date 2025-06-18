@@ -1,11 +1,11 @@
 # Licensed under the JADIV Private License v1.0 – see LICENSE file for details.
+# ubunted
 import sys
 import subprocess
 import time
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
-from wakeonlan import send_magic_packet
 from datetime import datetime
 import pytz
 import traceback
@@ -59,7 +59,7 @@ class Toast(QtWidgets.QLabel):
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ovládanie Hvezdárne - C14")
+        self.setWindowTitle("Ovládanie Hvezdárne - C14 - lite version for ubuntu 24.04")
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
 
@@ -364,10 +364,26 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def wake_on_lan(self, mac):
         try:
+            # Check if the `wakeonlan` command is available
+            subprocess.run(["which", "wakeonlan"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            # If the command is found, proceed with sending the magic packet
             send_magic_packet(mac)
             self.loguj(f"WOL na {mac}", typ="success")
-        except:
+        
+        except subprocess.CalledProcessError:
+            # If `wakeonlan` command is not found, show a dialog box to notify the user
+            self.show_wol_not_supported_dialog()
+        except Exception as e:
             self.loguj_traceback("Chyba WOL")
+
+    def show_wol_not_supported_dialog(self):
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Critical)
+        msg.setWindowTitle("WOL not supported")
+        msg.setText("Wake on LAN is not supported on this OS.")
+        QtWidgets.QMessageBox.critical(self, "WOL not supported","Wake on LAN is not supported on this OS.")
+
 
     def spusti_stream(self, rtsp_url):
         try:
@@ -466,7 +482,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
 
         # Nadpis
         lbl = QtWidgets.QLabel(
-            "Jadiv DEVCONTROL Enterprise for Vihorlat Observatory",
+            "Jadiv DEVCONTROL ubunted Enterprise for Vihorlat Observatory",
             self
         )
         lbl.setStyleSheet("color: blue; font-weight: bold; font-size: 10px;")
@@ -487,7 +503,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         for i in range(101):
             self.pr.setValue(i)
             QtWidgets.qApp.processEvents()
-            time.sleep(0.100)
+            time.sleep(0.50)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
