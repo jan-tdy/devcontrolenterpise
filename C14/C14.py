@@ -1,9 +1,143 @@
+#!/usr/bin/env python3
+# Licensed under the JADIV Private License v1.0 – see LICENSE file for details.
+# ubunted
+
+import sys
+import subprocess
+import time
+from datetime import datetime
+
+import PyQt5.QtWidgets as QtWidgets
+from PyQt5.QtWidgets import QMessageBox, QInputDialog
+import PyQt5.QtGui as QtGui
+import PyQt5.QtCore as QtCore
+import pytz
+import traceback
+import cv2
+from threading import Thread
+
+# --- Headless flags definitions ---
+FLAG_3_OF   = "-3"  in sys.argv and "-of" in sys.argv
+FLAG_2_OF   = "-2"  in sys.argv and "-of" in sys.argv
+FLAG_1_OF   = "-1"  in sys.argv and "-of" in sys.argv
+FLAG_3_ON   = "-3"  in sys.argv and "-on" in sys.argv
+FLAG_2_ON   = "-2"  in sys.argv and "-on" in sys.argv
+FLAG_1_ON   = "-1"  in sys.argv and "-on" in sys.argv
+FLAG_JUH_GO = "-juh" in sys.argv and "-go" in sys.argv
+FLAG_SEV_GO = "-sever" in sys.argv and "-go" in sys.argv
+
+# Path to log file
+LOG_PATH = "/home/dpv/j44softapps-socketcontrol/log.txt"
+
+# --- Logging utility ---
+def log(msg, typ="INFO"):
+    t = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    entry = f"[{t}] [{typ}] {msg}\n"
+    with open(LOG_PATH, "a") as f:
+        f.write(entry)
+
+# --- Headless handler ---
+def handle_headless():
+    if FLAG_3_OF:
+        try:
+            subprocess.run("sispmctl -f 3", shell=True, check=True)
+            log("Zásuvka 3 vypnutá (flag -3 -of)", "SUCCESS")
+        except Exception as e:
+            log(f"Chyba pri vypínaní zásuvky 3: {e}", "ERROR")
+        return True
+
+    if FLAG_2_OF:
+        try:
+            subprocess.run("sispmctl -f 2", shell=True, check=True)
+            log("Zásuvka 2 vypnutá (flag -2 -of)", "SUCCESS")
+        except Exception as e:
+            log(f"Chyba pri vypínaní zásuvky 2: {e}", "ERROR")
+        return True
+
+    if FLAG_1_OF:
+        try:
+            subprocess.run("sispmctl -f 1", shell=True, check=True)
+            log("Zásuvka 1 vypnutá (flag -1 -of)", "SUCCESS")
+        except Exception as e:
+            log(f"Chyba pri vypínaní zásuvky 1: {e}", "ERROR")
+        return True
+
+    if FLAG_3_ON:
+        try:
+            subprocess.run("sispmctl -o 3", shell=True, check=True)
+            log("Zásuvka 3 zapnutá (flag -3 -on)", "SUCCESS")
+        except Exception as e:
+            log(f"Chyba pri zapínaní zásuvky 3: {e}", "ERROR")
+        return True
+
+    if FLAG_2_ON:
+        try:
+            subprocess.run("sispmctl -o 2", shell=True, check=True)
+            log("Zásuvka 2 zapnutá (flag -2 -on)", "SUCCESS")
+        except Exception as e:
+            log(f"Chyba pri zapínaní zásuvky 2: {e}", "ERROR")
+        return True
+
+    if FLAG_1_ON:
+        try:
+            subprocess.run("sispmctl -o 1", shell=True, check=True)
+            log("Zásuvka 1 zapnutá (flag -1 -on)", "SUCCESS")
+        except Exception as e:
+            log(f"Chyba pri zapínaní zásuvky 1: {e}", "ERROR")
+        return True
+
+    if FLAG_JUH_GO:
+        try:
+            subprocess.run("usbrelay BITFT_1=1", shell=True, check=True)
+            time.sleep(2)
+            subprocess.run("usbrelay BITFT_1=0", shell=True, check=True)
+            log("Južná strecha otvorená (flag -juh -go)", "SUCCESS")
+        except Exception as e:
+            log(f"Chyba pri otváraní južnej strechy: {e}", "ERROR")
+        return True
+
+    if FLAG_SEV_GO:
+        try:
+            subprocess.run("usbrelay BITFT_2=1", shell=True, check=True)
+            time.sleep(2)
+            subprocess.run("usbrelay BITFT_2=0", shell=True, check=True)
+            log("Severná strecha otvorená (flag -sever -go)", "SUCCESS")
+        except Exception as e:
+            log(f"Chyba pri otváraní severnej strechy: {e}", "ERROR")
+        return True
+
+    return False
+
+# --- Main entrypoint ---
+if __name__ == "__main__":
+    # run headless if any flag matches
+    if handle_headless():
+        sys.exit(0)
+
+    # else, start GUI application
+    from PyQt5.QtWidgets import QApplication
+    # ... rest of imports and classes above ...
+    app = QApplication(sys.argv)
+    # Initialize and show splash + main window here
+    splash = SplashScreen()
+    splash.show()
+    QApplication.processEvents()
+    splash.simulate_loading()
+    try:
+        window = MainWindow()
+        window.show()
+        splash.finish(window)
+    except Exception as e:
+        # existing bug-window logic
+        pass
+    sys.exit(app.exec_())
 # Licensed under the JADIV Private License v1.0 – see LICENSE file for details.
 # ubunted
 import sys
 import subprocess
 import time
 import PyQt5.QtWidgets as QtWidgets
+from PyQt5.QtWidgets import QMessageBox
 import PyQt5.QtGui as QtGui
 import PyQt5.QtCore as QtCore
 from datetime import datetime
@@ -11,6 +145,8 @@ import pytz
 import traceback
 import cv2
 from threading import Thread
+from PyQt5.QtWidgets import QInputDialog
+
 
 IS_DEV = "-developer" in sys.argv
 IS_FLAG1 = "-flag1" in sys.argv # add new method
@@ -27,6 +163,7 @@ CENTRAL2_IP = "172.20.20.133"
 AZ2000_IP = "172.20.20.116"
 SSH_USER2 = "pi2"
 SSH_PASS2 = "otj0711"
+
 
 class Toast(QtWidgets.QLabel):
     def __init__(self, msg, typ="info", parent=None):
@@ -243,9 +380,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.loguj(f"{msg}\n{tb}" if IS_DEV else msg, typ=typ)
 
     def spusti_stream_live(self, url, label, kamera_typ):
-        from threading import Thread
-        import time
-        import cv2
     
         attr_running = f"kamera_running_{kamera_typ}"
         attr_thread = f"kamera_thread_{kamera_typ}"
@@ -358,7 +492,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def nastav_casovac_strechy(self):
         try:
-            dt = datetime.strptime(self.cas_input.text(), "%Y-%m-%d %H:%M").astimezone(pytz.utc)
+            naive = datetime.strptime(self.cas_input.text(), "%Y-%m-%d %H:%M")
+            local = pytz.timezone("Europe/Bratislava").localize(naive)
+            self.c_time = local.astimezone(pytz.utc)
+
             self.c_act = True
             self.c_smer = self.cas_smer.currentText()
             self.c_time = dt
@@ -377,6 +514,7 @@ class MainWindow(QtWidgets.QMainWindow):
             subprocess.run(["which", "wakeonlan"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
             # If the command is found, proceed with sending the magic packet
+            from wakeonlan import send_magic_packet
             send_magic_packet(mac)
             self.loguj(f"WOL na {mac}", typ="success")
         
