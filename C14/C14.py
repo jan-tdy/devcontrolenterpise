@@ -314,11 +314,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def ovladaj_strechu(self, s):
         PRIKAZY_STRECHA = {
-            "sever": ["crelay -s BITFT 2 ON", "crelay -s BITFT 2 OFF"],
-            "juh": ["crelay -s BITFT 1 ON", "crelay -s BITFT 1 OFF"],
+            "sever": [
+                "usbrelay BITFT_2=1",  # zapni severné relé (druhý kanál)
+                "usbrelay BITFT_2=0",  # vypni severné relé
+            ],
+            "juh": [
+                "usbrelay BITFT_1=1",  # zapni južné relé (prvý kanál)
+                "usbrelay BITFT_1=0",  # vypni južné relé
+            ],
             "both": [
-                "crelay -s BITFT 1 ON", "crelay -s BITFT 2 ON",
-                "crelay -s BITFT 1 OFF", "crelay -s BITFT 2 OFF"
+                "usbrelay BITFT_1=1",  # zapni juh
+                "usbrelay BITFT_2=1",  # zapni sever
+                "usbrelay BITFT_1=0",  # vypni juh
+                "usbrelay BITFT_2=0",  # vypni sever
             ]
         }
 
