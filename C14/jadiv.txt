@@ -1,0 +1,46 @@
+Aby si mohol spúšťať svoj skript jednoducho príkazom `453` (bez prípony), stačí:
+
+1. **Premenuj alebo vytvor odkaz**
+   Ulož svoj `shelleas.py` ako `453` (bez `.py`) napríklad do `/usr/local/bin`:
+
+   ```bash
+   sudo mv shelleas.py /usr/local/bin/453
+   ```
+
+   alebo ak už tam máš starý súbor, vytvor naň symbolický odkaz:
+
+   ```bash
+   sudo ln -s /cesta/k/tvojmu/shelleas.py /usr/local/bin/453
+   ```
+
+2. **Nastav spustiteľné práva**
+
+   ```bash
+   sudo chmod +x /usr/local/bin/453
+   ```
+
+3. **Over, že je v PATH**
+   `/usr/local/bin` by malo byť v tvojom `PATH`. Skontroluj:
+
+   ```bash
+   echo $PATH
+   ```
+
+   Ak tam nie je, pridaj do `~/.bashrc` alebo `~/.zshrc`:
+
+   ```bash
+   export PATH="/usr/local/bin:$PATH"
+   ```
+
+4. **Spúšťanie**
+   Teraz už stačí z terminálu volať:
+
+   ```bash
+   453 -hep
+   453 -3 -of
+   453 -juh -go
+   ```
+
+   a tvoj skript sa spustí s príslušnými flagmi, zapíše log a okamžite sa ukončí.
+
+Týmto spôsobom budeš mať presne požadované spúšťanie `453` bez akýchkoľvek prípon.
