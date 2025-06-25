@@ -356,18 +356,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cas_btn.setEnabled(e)
         if not e:
             self.c_act = False
-
+            
     def nastav_casovac_strechy(self):
         try:
             naive = datetime.strptime(self.cas_input.text(), "%Y-%m-%d %H:%M")
             local = pytz.timezone("Europe/Bratislava").localize(naive)
             self.c_time = local.astimezone(pytz.utc)
-
+    
             self.c_act = True
             self.c_smer = self.cas_smer.currentText()
-            self.c_time = dt
+            # odstrániť tento riadok: self.c_time = dt
+            self.loguj(f"Časovač nastavený na {self.c_time} pre smer {self.c_smer}", typ="success")
         except:
             self.loguj_traceback("Chybný formát času")
+
 
     def skontroluj_cas_strechy(self):
         if self.c_act and datetime.now(pytz.utc) >= self.c_time:
