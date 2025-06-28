@@ -1,5 +1,5 @@
 # Licensed under the JADIV Private License v1.0 – see LICENSE file for details.
-# ubunted
+# raspberried
 import sys
 import subprocess
 import time
@@ -10,8 +10,6 @@ import PyQt5.QtCore as QtCore
 from datetime import datetime
 import pytz
 import traceback
-import cv2
-from threading import Thread
 from PyQt5.QtWidgets import QInputDialog
 
 
@@ -19,9 +17,9 @@ IS_DEV = "-developer" in sys.argv
 IS_FLAG1 = "-flag1" in sys.argv # add new method
 
 ZASUVKY = {
-    "NOUT": 4,
-    "C14": 3,
-    "RC16": 2
+    "KKmaly": 4,
+    "ONTC": 2,
+    "Parmezan": 1
 }
 PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
 SSH_USER = "dpv"
@@ -64,7 +62,7 @@ class Toast(QtWidgets.QLabel):
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ovládanie Hvezdárne - C14 - lite version for ubuntu 24.04")
+        self.setWindowTitle("Ovládanie Hvezdárne - C14 - lite version for raspbain bullseye")
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
 
@@ -84,12 +82,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.log_box.setReadOnly(True)
         self.log_box.setMinimumHeight(100)
 
-        self.kamera_label_astrofoto = QtWidgets.QLabel()
-        self.kamera_label_astro = QtWidgets.QLabel()
-        self.kamera_thread_astrofoto = None
-        self.kamera_thread_astro = None
-        self.kamera_running_astrofoto = False
-        self.kamera_running_astro = False
     
         try:
             with open("/home/dpv/j44softapps-socketcontrol/log.txt", "r") as f:
@@ -120,7 +112,7 @@ class MainWindow(QtWidgets.QMainWindow):
             out = subprocess.check_output("indistarter", shell=True)
             self.loguj(out.decode())
         except:
-            self.loguj_traceback("Chyba spustenia INDISTARTER C14")
+            self.loguj_traceback("Chyba spustenia INDISTARTER tu")
 
     def spusti_indistarter_az2000(self):
         try:
@@ -151,8 +143,8 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
 
         # INDISTARTER
-        ind_c14 = QtWidgets.QPushButton("Spustiť INDISTARTER C14")
-        ind_az = QtWidgets.QPushButton("Spustiť INDISTARTER AZ2000")
+        ind_c14 = QtWidgets.QPushButton("Spustiť INDISTARTER tu")
+        ind_az = QtWidgets.QPushButton("null")
         ind_c14.clicked.connect(self.spusti_indistarter_c14)
         ind_az.clicked.connect(self.spusti_indistarter_az2000)
         layout.addWidget(ind_c14, 1, 0, 1, 3)
@@ -161,8 +153,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # Strecha
         strecha_group = QtWidgets.QGroupBox("Strecha")
         strecha_layout = QtWidgets.QGridLayout(strecha_group)
-        self.sever_button = QtWidgets.QPushButton("Sever")
-        self.juh_button = QtWidgets.QPushButton("Juh")
+        self.sever_button = QtWidgets.QPushButton("Zapad")
+        self.juh_button = QtWidgets.QPushButton("Vychod")
         self.both_button = QtWidgets.QPushButton("Both")
         self.sever_button.clicked.connect(lambda: self.ovladaj_strechu("sever"))
         self.juh_button.clicked.connect(lambda: self.ovladaj_strechu("juh"))
@@ -179,16 +171,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cas_enable.stateChanged.connect(self.toggle_casovac_strechy)
         self.cas_smer = QtWidgets.QComboBox()
         self.cas_smer.addItems(["sever", "juh", "both"])
-        self.cas_input = QtWidgets.QLineEdit()
-        self.cas_input.setPlaceholderText("YYYY-MM-DD HH:MM")
+        self.cas_datetime = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
+        self.cas_datetime.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.cas_datetime.setCalendarPopup(True)
         self.cas_btn = QtWidgets.QPushButton("Nastaviť časovač")
         self.cas_btn.clicked.connect(self.nastav_casovac_strechy)
         self.cas_btn.setEnabled(False)
         cas_layout.addWidget(self.cas_enable, 0, 0, 1, 2)
         cas_layout.addWidget(QtWidgets.QLabel("Smer:"), 1, 0)
         cas_layout.addWidget(self.cas_smer, 1, 1)
-        cas_layout.addWidget(QtWidgets.QLabel("Čas:"), 2, 0)
-        cas_layout.addWidget(self.cas_input, 2, 1)
+        cas_layout.addWidget(QtWidgets.QLabel("Dátum a čas:"), 2, 0)
+        cas_layout.addWidget(self.cas_datetime, 2, 1)
         cas_layout.addWidget(self.cas_btn, 3, 0, 1, 2)
         layout.addWidget(cas_group, 4, 0, 1, 3)
 
@@ -205,87 +198,28 @@ class MainWindow(QtWidgets.QMainWindow):
     def init_wake_on_lan_section(self):
         box = QtWidgets.QGroupBox("WAKE-ON-LAN")
         lay = QtWidgets.QGridLayout(box)
-        z1 = QtWidgets.QPushButton("Zapni AZ2000")
-        z2 = QtWidgets.QPushButton("Zapni GM3000")
+        z1 = QtWidgets.QPushButton("null")
+        z2 = QtWidgets.QPushButton("null")
         z1.clicked.connect(lambda: self.wake_on_lan("00:c0:08:a9:c2:32"))
         z2.clicked.connect(lambda: self.wake_on_lan("00:c0:08:aa:35:12"))
         lay.addWidget(z1, 0, 0)
         lay.addWidget(z2, 0, 1)
-        return box  # tu bola chyba, mal si group_box
+        return box
 
     def init_ota_section(self):
-        box = QtWidgets.QGroupBox("OTA Aktualizácie a Kamery")
+        box = QtWidgets.QGroupBox("OTA Aktualizácie")
         lay = QtWidgets.QGridLayout(box)
-    
+
         but = QtWidgets.QPushButton("🔄 Aktualizovať program")
         but.clicked.connect(self.aktualizuj_program)
         lay.addWidget(but, 0, 0, 1, 2)
-    
-        # ➕ PRIDANÉ: Tlačidlo pre kontrolu kamery astrofoto
-        control_btn = QtWidgets.QPushButton("🛠️ Control astrofoto Camera")
-        control_btn.clicked.connect(lambda: subprocess.Popen(["python3", "/home/dpv/j44softapps-socketcontrol/C14-vigi.py"]))
-        lay.addWidget(control_btn, 1, 0, 1, 2)
-    
-        rtsp_astrofoto = "rtsp://dpv-hard:lefton44@172.20.20.134:554/stream1"
-        rtsp_astrofoto = "rtsp://dpv-hard:lefton44@172.20.20.131:554/stream1"
-    
-        kamera_btn1 = QtWidgets.QPushButton("📷 Stream astrofoto")
-        kamera_btn2 = QtWidgets.QPushButton("📷 Stream Astrofoto")
-        kamera_btn1.clicked.connect(lambda: self.spusti_stream_live(rtsp_astrofoto, self.kamera_label_astrofoto, "astrofoto"))
-        kamera_btn2.clicked.connect(lambda: self.spusti_stream_live(rtsp_astrofoto, self.kamera_label_astro, "astro"))
-    
-        lay.addWidget(kamera_btn1, 2, 0)
-        lay.addWidget(kamera_btn2, 2, 1)
-    
-        lay.addWidget(self.kamera_label_astrofoto, 3, 0)
-        lay.addWidget(self.kamera_label_astro, 3, 1)
-    
+
         return box
+
 
     def loguj_traceback(self, msg, typ="error"):
         tb = traceback.format_exc()
         self.loguj(f"{msg}\n{tb}" if IS_DEV else msg, typ=typ)
-
-    def spusti_stream_live(self, url, label, kamera_typ):
-    
-        attr_running = f"kamera_running_{kamera_typ}"
-        attr_thread = f"kamera_thread_{kamera_typ}"
-    
-        if getattr(self, attr_running):
-            # Ak beží, zastavíme ho
-            setattr(self, attr_running, False)
-            self.loguj(f"Zastavený RTSP stream: {kamera_typ}", typ="info")
-            return
-    
-        def zobraz():
-            cap = cv2.VideoCapture(url)
-            if not cap.isOpened():
-                self.loguj(f"Nepodarilo sa otvoriť RTSP stream: {url}", typ="error")
-                return
-    
-            setattr(self, attr_running, True)
-            self.loguj(f"Spustený RTSP stream: {kamera_typ}", typ="success")
-    
-            while getattr(self, attr_running):
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = rgb.shape
-                bytes_per_line = ch * w
-                qimg = QtGui.QImage(rgb.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
-                pix = QtGui.QPixmap.fromImage(qimg).scaled(320, 240, QtCore.Qt.KeepAspectRatio)
-                label.setPixmap(pix)
-                time.sleep(0.05)
-    
-            cap.release()
-            label.clear()
-            setattr(self, attr_running, False)
-    
-        # Spustíme nový thread
-        thread = Thread(target=zobraz, daemon=True)
-        setattr(self, attr_thread, thread)
-        thread.start()
 
     def aktualizuj_stav_zasuviek(self):
         self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
@@ -352,23 +286,22 @@ class MainWindow(QtWidgets.QMainWindow):
     def toggle_casovac_strechy(self, st):
         e = (st == QtCore.Qt.Checked)
         self.cas_smer.setEnabled(e)
-        self.cas_input.setEnabled(e)
+        self.cas_datetime.setEnabled(e)
         self.cas_btn.setEnabled(e)
         if not e:
             self.c_act = False
             
     def nastav_casovac_strechy(self):
         try:
-            naive = datetime.strptime(self.cas_input.text(), "%Y-%m-%d %H:%M")
-            local = pytz.timezone("Europe/Bratislava").localize(naive)
-            self.c_time = local.astimezone(pytz.utc)
-    
+            qdt = self.cas_datetime.dateTime()
+            self.c_time = qdt.toPyDateTime().replace(tzinfo=pytz.utc)
+
             self.c_act = True
             self.c_smer = self.cas_smer.currentText()
-            # odstrániť tento riadok: self.c_time = dt
-            self.loguj(f"Časovač nastavený na {self.c_time} pre smer {self.c_smer}", typ="success")
+            self.loguj(f"Časovač nastavený na UTC {self.c_time} pre smer {self.c_smer}", typ="success")
         except:
-            self.loguj_traceback("Chybný formát času")
+            self.loguj_traceback("Chyba pri nastavovaní časovača")
+
 
 
     def skontroluj_cas_strechy(self):
@@ -385,7 +318,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # If the command is found, proceed with sending the magic packet
             from wakeonlan import send_magic_packet
             send_magic_packet(mac)
-            self.loguj(f"WOL na {mac}", typ="success")
+            self.loguj(f"WOL na {mac} nieje podporovany", typ="warning")
         
         except subprocess.CalledProcessError:
             # If `wakeonlan` command is not found, show a dialog box to notify the user
@@ -483,43 +416,94 @@ class MainWindow(QtWidgets.QMainWindow):
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
-        pix = QtGui.QPixmap("logo.png")
-        super().__init__(pix)
+        super().__init__()
+        self.resize(1000, 750)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint)
+        self.setStyleSheet("background-color: white;")
 
-        # Licenčný text
-        lic = QtWidgets.QLabel(
-            "Licensed under the JADIV Private License v1.0 – see LICENSE file for details.",
-            self
-        )
-        lic.setStyleSheet("color: blue; font-size: 8px;")
-        lic.setAlignment(QtCore.Qt.AlignCenter)
-        lic.setGeometry(0, pix.height(), pix.width(), 20)
+        # === LOGO ===
+        logo = QtWidgets.QLabel(self)
+        pixmap = QtGui.QPixmap("logo.png")
+        scaled = pixmap.scaled(100, 100, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        logo.setPixmap(scaled)
+        logo.setFixedSize(scaled.size())
+        logo.move((self.width() - scaled.width()) // 2, 10)
 
-        # Nadpis
-        lbl = QtWidgets.QLabel(
-            "Jadiv DEVCONTROL ubunted Enterprise for Vihorlat Observatory",
-            self
-        )
-        lbl.setStyleSheet("color: blue; font-weight: bold; font-size: 10px;")
-        lbl.setAlignment(QtCore.Qt.AlignCenter)
-        lbl.setGeometry(0, pix.height() + 20, pix.width(), 40)
+        base_y = 120  # všetky texty začínajú až pod logom
 
-        # Progress bar (fake loading)
+        # === Nadpis ===
+        lbl = QtWidgets.QLabel("🛰️ Jadiv DEVCONTROL raspberried Enterprise for Vihorlat Observatory", self)
+        lbl.setStyleSheet("color: #224488; font-weight: bold; font-size: 14pt;")
+        lbl.adjustSize()
+        lbl.move((self.width() - lbl.width()) // 2, base_y)
+
+        # === Verzia ===
+        verzia = QtWidgets.QLabel("Lite version -- raspberried-bullseye", self)
+        verzia.setStyleSheet("color: #666; font-size: 10pt;")
+        verzia.adjustSize()
+        verzia.move((self.width() - verzia.width()) // 2, base_y + 30)
+
+        # === Popis ===
+        extra = QtWidgets.QLabel("Loading the program, that may take a few moments.\nInicializujem všetko potrebné.\nKód obsahuje vyše 1000 riadkov...", self)
+        extra.setStyleSheet("color: #000000; font-size: 9pt;")
+        extra.setAlignment(QtCore.Qt.AlignCenter)
+        extra.adjustSize()
+        extra.move((self.width() - extra.width()) // 2, base_y + 60)
+
+        # === Licencia ===
+        lic = QtWidgets.QLabel("Licensed under the JADIV Private License v1.0 – see LICENSE file for details.", self)
+        lic.setStyleSheet("color: blue; font-size: 10px;")
+        lic.adjustSize()
+        lic.move((self.width() - lic.width()) // 2, base_y + 120)
+
+        # === Progress bar ===
         pr = QtWidgets.QProgressBar(self)
-        pr.setGeometry(10, pix.height() + 70, pix.width() - 20, 20)
+        pr.setGeometry(250, base_y + 150, 500, 20)
         pr.setRange(0, 100)
         pr.setValue(0)
         pr.setTextVisible(False)
         self.pr = pr
 
-        self.resize(pix.width(), pix.height() + 100)
-
     def simulate_loading(self):
-        for i in range(101):
-            self.pr.setValue(i)
+        base_y = 120  # 
+        spravy = [
+            "🔧 Aktivujem sekciu spusti_indistarter_c14()...",
+            "📡 Aktivujem sekciu spusti_wakeonlan_c14()...",
+            "🔌 Aktivujem sekciu init_relay_connection()...",
+            "📁 Aktivujem sekciu init_program_paths()...",
+            "📦 Aktivujem sekciu init_astrofoto_section()...",
+            "🧪 Aktivujem sekciu kontrola_relé_stavu()...",
+            "📋 Aktivujem sekciu init_logging_system()...",
+            "🔐 Aktivujem sekciu overenie_hesiel()...",
+            "📡 Aktivujem sekciu init_remote_connect()...",
+            "🕒 Aktivujem sekciu casovac_strechy()...",
+            "🗄️ Aktivujem sekciu nacitanie_logu()...",
+            "🧰 Aktivujem sekciu init_debug_modul()...",
+            "🧠 Aktivujem sekciu init_gui_components()...",
+            "🔧 Aktivujem sekciu init_zasuvky_module()...",
+            "🔁 Aktivujem sekciu prepni_strechu_juh()...",
+            "🌐 Aktivujem sekciu connect_to_az2000()...",
+            "🔎 Aktivujem sekciu kontrola_usb_pripojeni()...",
+            "📑 Aktivujem sekciu nacitaj_konfiguraciu()...",
+            "📊 Aktivujem sekciu zobraz_graf_teploty()...",
+            "🚀 Dokončujem inicializáciu hlavného rozhrania..."
+        ]
+
+        # Použijeme len jeden QLabel pre status hlášky
+        self.status_label = QtWidgets.QLabel("", self)
+        self.status_label.setStyleSheet("color: #444; font-size: 10pt;")
+        self.status_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.status_label.setGeometry(0, base_y + 100, self.width(), 20)
+
+        celkovy_cas = 5.0  # celé načítavanie trvá 5 sekúnd
+        krok_cas = celkovy_cas / len(spravy)
+
+        for i, sprava in enumerate(spravy):
+            self.status_label.setText(sprava)
+            self.pr.setValue(int((i + 1) * 100 / len(spravy)))
             QtWidgets.qApp.processEvents()
-            time.sleep(0.50)
+            time.sleep(krok_cas)
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
