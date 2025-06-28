@@ -3,12 +3,9 @@ Copyright (c) 2025 Ján Dubovský
 This software is provided under a custom proprietary license.
 
 You are NOT allowed to:
-
-modify this software or any part of it,
-
-publish or distribute modified versions,
-
-use it for commercial purposes
+- modify this software or any part of it,
+- publish or distribute modified versions,
+- use it for commercial purposes
 
 Unless you have the author's verbal or email approval (no physical written permission is required).
 
@@ -16,5 +13,12 @@ This software is intended for personal and non-commercial use only.
 The author reserves all rights.
 
 Author contact: jan-tdy (https://github.com/jan-tdy)
+
+DISCLAIMER OF WARRANTY:
+This software is provided "as is", without warranty of any kind, express or implied,
+including but not limited to the warranties of merchantability, fitness for a particular purpose,
+and noninfringement. In no event shall the author be liable for any claim, damages,
+or other liability, whether in an action of contract, tort or otherwise,
+arising from, out of or in connection with the software or the use or other dealings in the software.
 
 By using this software, you agree to the terms of this license.
