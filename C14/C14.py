@@ -288,7 +288,7 @@ class MainWindow(QtWidgets.QMainWindow):
         thread.start()
 
     def aktualizuj_stav_zasuviek(self):
-        self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
+        # self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
         for n, c in ZASUVKY.items():
             self.zisti_stav_zasuvky(c, n)
     def ovladaj_zasuvku(self, cis, on, lab):
