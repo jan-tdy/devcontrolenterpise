@@ -30,6 +30,6 @@ else
 fi
 
 # Reštartuje program C14
-python3 /home/dpv/j44softapps-socketcontrol/C14.py &
+python3 /home/dpv/j44softapps-socketcontrol/Astrofoto.py &
 
 exit 0
