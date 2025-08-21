@@ -55,12 +55,12 @@ class SplashScreen(QtWidgets.QSplashScreen):
             logo_lbl.setAlignment(QtCore.Qt.AlignCenter)
             lay.addWidget(logo_lbl)
 
-        title = QtWidgets.QLabel("🛰️ Jadiv DEVCONTROL – PICO Strecha")
+        title = QtWidgets.QLabel(" Booting: Jadiv DEVCONTROL – telescope cover - free verison")
         title.setAlignment(QtCore.Qt.AlignCenter)
         title.setStyleSheet("color:#224488; font-weight:bold; font-size:18pt;")
         lay.addWidget(title)
 
-        self.status = QtWidgets.QLabel("Inicializujem…")
+        self.status = QtWidgets.QLabel("Inicializujem Jadiv DEVCONTROL...")
         self.status.setAlignment(QtCore.Qt.AlignCenter)
         self.status.setStyleSheet("color:#333; font-size:11pt;")
         lay.addWidget(self.status)
@@ -85,7 +85,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         ]
         for i, text in enumerate(steps, start=1):
             self.status.setText(text)
-            self.pr.setValue(int(i * 100 / len(steps)))
+            self.pr.setValue(int(i * 1000 / len(steps)))
             app.processEvents()
             QtCore.QThread.msleep(350)
 
@@ -110,7 +110,7 @@ class Toast(QtWidgets.QLabel):
 class Main(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("PICO strecha – jednoduché ovládanie")
+        self.setWindowTitle("🛰️ Jadiv DEVCONTROL – telescope cover - free verison")
         self.resize(640, 520)
 
         central = QtWidgets.QWidget()
