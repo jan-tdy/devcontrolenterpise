@@ -296,14 +296,22 @@ class MainWindow(QtWidgets.QMainWindow):
             qdt = self.cas_datetime.dateTime()
             self.c_time = qdt.toPyDateTime().replace(tzinfo=pytz.utc)
 
+            now_utc = datetime.now(pytz.utc)
+            if self.c_time <= now_utc:
+                QtWidgets.QMessageBox.warning(
+                    self, "Chybný čas",
+                    "Zadaný čas je v minulosti.\nProsím zadajte čas v budúcnosti."
+                )
+                self.c_act = False
+                self.loguj("Zadaný časovač je v minulosti, akcia nebola aktivovaná.", typ="warning")
+                return
+
             self.c_act = True
             self.c_smer = self.cas_smer.currentText()
             self.loguj(f"Časovač nastavený na UTC {self.c_time} pre smer {self.c_smer}", typ="success")
         except:
             self.loguj_traceback("Chyba pri nastavovaní časovača")
-
-
-
+            
     def skontroluj_cas_strechy(self):
         if self.c_act and datetime.now(pytz.utc) >= self.c_time:
             self.ovladaj_strechu(self.c_smer)
