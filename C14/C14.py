@@ -362,15 +362,19 @@ class MainWindow(QtWidgets.QMainWindow):
             naive = datetime.strptime(self.cas_input.text(), "%Y-%m-%d %H:%M")
             local = pytz.timezone("Europe/Bratislava").localize(naive)
             self.c_time = local.astimezone(pytz.utc)
+            now_utc = datetime.now(pytz.utc)
+    
+            if self.c_time <= now_utc:
+                QtWidgets.QMessageBox.warning(self, "Chybný čas", "Zadaný čas je v minulosti. Časovač nebude aktivovaný.")
+                self.c_act = False
+                return
     
             self.c_act = True
             self.c_smer = self.cas_smer.currentText()
-            # odstrániť tento riadok: self.c_time = dt
             self.loguj(f"Časovač nastavený na {self.c_time} pre smer {self.c_smer}", typ="success")
-        except:
+        except Exception:
             self.loguj_traceback("Chybný formát času")
-
-
+            
     def skontroluj_cas_strechy(self):
         if self.c_act and datetime.now(pytz.utc) >= self.c_time:
             self.ovladaj_strechu(self.c_smer)
