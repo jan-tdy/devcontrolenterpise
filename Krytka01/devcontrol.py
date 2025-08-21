@@ -1,4 +1,4 @@
-# PICO strecha – minimal GUI (Splash + Log + 3 tlačidlá + stavová ikonka)
+# PICO strecha – GUI (Splash + Log + 3 tlačidlá + stavová ikonka + časovače)
 # Spúšťa ~/pico_open.py, ~/pico_close.py a číta ~/pico-check.py
 # Ikonky očakáva vedľa tohto .py: led_def.png, led_green.png, led_red.png
 
@@ -55,12 +55,12 @@ class SplashScreen(QtWidgets.QSplashScreen):
             logo_lbl.setAlignment(QtCore.Qt.AlignCenter)
             lay.addWidget(logo_lbl)
 
-        title = QtWidgets.QLabel("🛰️ Jadiv DEVCONTROL –  ovaldanie krytky - free version")
+        title = QtWidgets.QLabel("🛰️ Jadiv DEVCONTROL – PICO Strecha")
         title.setAlignment(QtCore.Qt.AlignCenter)
         title.setStyleSheet("color:#224488; font-weight:bold; font-size:18pt;")
         lay.addWidget(title)
 
-        self.status = QtWidgets.QLabel("Inicializujem 🛰️ Jadiv DEVCONTROL –  ovaldanie krytky - free version…")
+        self.status = QtWidgets.QLabel("Inicializujem…")
         self.status.setAlignment(QtCore.Qt.AlignCenter)
         self.status.setStyleSheet("color:#333; font-size:11pt;")
         lay.addWidget(self.status)
@@ -110,8 +110,8 @@ class Toast(QtWidgets.QLabel):
 class Main(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("japysoft krytka - jednoduchy devcontrol")
-        self.resize(560, 380)
+        self.setWindowTitle("PICO strecha – jednoduché ovládanie")
+        self.resize(640, 520)
 
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
@@ -138,11 +138,48 @@ class Main(QtWidgets.QMainWindow):
         top.addStretch()
         top.addWidget(self.icon_lbl)
 
+        # === ČASOVAČE ===
+        sched_box = QtWidgets.QGroupBox("Časovač")
+        sched_lay = QtWidgets.QGridLayout(sched_box)
+
+        # Otvorenie
+        self.chk_open = QtWidgets.QCheckBox("Aktivovať otvorenie v čase:")
+        self.dt_open  = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
+        self.dt_open.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.dt_open.setCalendarPopup(True)
+        self.btn_set_open = QtWidgets.QPushButton("Nastaviť otvorenie")
+        self.lbl_open_status = QtWidgets.QLabel("Neplánované")
+
+        self.btn_set_open.clicked.connect(self.set_open_schedule)
+        self.chk_open.stateChanged.connect(self.toggle_open_enabled)
+
+        # Zatvorenie
+        self.chk_close = QtWidgets.QCheckBox("Aktivovať zatvorenie v čase:")
+        self.dt_close  = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
+        self.dt_close.setDisplayFormat("yyyy-MM-dd HH:mm")
+        self.dt_close.setCalendarPopup(True)
+        self.btn_set_close = QtWidgets.QPushButton("Nastaviť zatvorenie")
+        self.lbl_close_status = QtWidgets.QLabel("Neplánované")
+
+        self.btn_set_close.clicked.connect(self.set_close_schedule)
+        self.chk_close.stateChanged.connect(self.toggle_close_enabled)
+
+        # Rozloženie časovača
+        r = 0
+        sched_lay.addWidget(self.chk_open, r, 0, 1, 2); sched_lay.addWidget(self.dt_open, r, 2); sched_lay.addWidget(self.btn_set_open, r, 3); r += 1
+        sched_lay.addWidget(QtWidgets.QLabel("Stav:"), r, 0); sched_lay.addWidget(self.lbl_open_status, r, 1, 1, 3); r += 1
+        sched_lay.addWidget(self.chk_close, r, 0, 1, 2); sched_lay.addWidget(self.dt_close, r, 2); sched_lay.addWidget(self.btn_set_close, r, 3); r += 1
+        sched_lay.addWidget(QtWidgets.QLabel("Stav:"), r, 0); sched_lay.addWidget(self.lbl_close_status, r, 1, 1, 3)
+
+        self.toggle_open_enabled(self.chk_open.checkState())
+        self.toggle_close_enabled(self.chk_close.checkState())
+
         # log okno
         self.log = QtWidgets.QTextEdit(readOnly=True)
         self.log.setMinimumHeight(220)
 
         root.addLayout(top)
+        root.addWidget(sched_box)
         root.addWidget(self.log)
 
         # načítaj existujúci log
@@ -152,11 +189,21 @@ class Main(QtWidgets.QMainWindow):
         except Exception:
             pass
 
-        # auto-refresh každé 3 sekundy
+        # auto-refresh stavu každé 3 sekundy
         self._last_state = None  # None/0/1
-        self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self.refresh_state)
-        self.timer.start(REFRESH_MS)
+        self.timer_state = QtCore.QTimer(self)
+        self.timer_state.timeout.connect(self.refresh_state)
+        self.timer_state.start(REFRESH_MS)
+
+        # plánovač – kontrola každú sekundu
+        self.open_active = False
+        self.open_when: QtCore.QDateTime | None = None
+        self.close_active = False
+        self.close_when: QtCore.QDateTime | None = None
+
+        self.timer_sched = QtCore.QTimer(self)
+        self.timer_sched.timeout.connect(self._scheduler_tick)
+        self.timer_sched.start(1000)
 
         # prvé zistenie po štarte
         QtCore.QTimer.singleShot(400, self.refresh_state)
@@ -185,37 +232,40 @@ class Main(QtWidgets.QMainWindow):
     def _run_and_report(self, path: Path, action_name: str):
         if not path.exists():
             self._log(f"Chýba súbor: {path}", "error")
-            return
+            return False
         proc = run_script(path)
         if proc.returncode == 0:
             self._log(f"OK: {action_name}", "success")
+            return True
         else:
             err = (proc.stderr or proc.stdout or "").strip()
             self._log(f"Chyba {action_name}: {err}", "error")
+            return False
 
-    # ----- actions -----
+    # ----- akcie tlačidiel -----
     def cmd_open(self):
-        self._run_and_report(PY_OPEN, "Otvoriť (pico_open.py)")
-        self.refresh_state()
+        if self._run_and_report(PY_OPEN, "Otvoriť (pico_open.py)"):
+            self.refresh_state()
 
     def cmd_close(self):
-        self._run_and_report(PY_CLOSE, "Zatvoriť (pico_close.py)")
-        self.refresh_state()
+        if self._run_and_report(PY_CLOSE, "Zatvoriť (pico_close.py)"):
+            self.refresh_state()
 
+    # ----- stav ikonky -----
     def refresh_state(self):
         if not PY_CHECK.exists():
-            self._set_icon(ICON_DEF)
-            if self._last_state is not None:  # logni len pri zmene z „máme stav“ -> „skript chýba“
-                self._log(f"Chýba súbor: {PY_CHECK}", "error")
+            if self._last_state is not None:
+                self._set_icon(ICON_DEF)
+                self._log(f"Chýba súbor: {PY_CHECK}", "error", toast=False)
                 self._last_state = None
             return
 
         proc = run_script(PY_CHECK)
         out = (proc.stdout or "").strip()
         if proc.returncode != 0:
-            self._set_icon(ICON_DEF)
-            if self._last_state is not None:  # logni len pri zmene
-                self._log(f"Chyba check: {(proc.stderr or out).strip()}", "error")
+            if self._last_state is not None:
+                self._set_icon(ICON_DEF)
+                self._log(f"Chyba check: {(proc.stderr or out).strip()}", "error", toast=False)
                 self._last_state = None
             return
 
@@ -232,8 +282,71 @@ class Main(QtWidgets.QMainWindow):
         else:
             if self._last_state is not None:
                 self._set_icon(ICON_DEF)
-                self._log(f"Neznámy výstup z pico-check.py: '{out}'", "error")
+                self._log(f"Neznámy výstup z pico-check.py: '{out}'", "error", toast=False)
                 self._last_state = None
+
+    # ----- časovače UI -----
+    def toggle_open_enabled(self, state):
+        en = state == QtCore.Qt.Checked
+        self.dt_open.setEnabled(en)
+        self.btn_set_open.setEnabled(en)
+
+    def toggle_close_enabled(self, state):
+        en = state == QtCore.Qt.Checked
+        self.dt_close.setEnabled(en)
+        self.btn_set_close.setEnabled(en)
+
+    def set_open_schedule(self):
+        if not self.chk_open.isChecked():
+            self.open_active = False
+            self.lbl_open_status.setText("Neplánované")
+            self._log("Časovač otvorenia vypnutý.", "info", toast=False)
+            return
+
+        when = self.dt_open.dateTime()
+        if when <= QtCore.QDateTime.currentDateTime():
+            self._log("Časovač otvorenia: zadaný čas je v minulosti.", "error")
+            return
+
+        self.open_when = when
+        self.open_active = True
+        self.lbl_open_status.setText(f"Naplánované na {when.toString('yyyy-MM-dd HH:mm')}")
+
+        self._log(f"Časovač otvorenia nastavený na {when.toString('yyyy-MM-dd HH:mm')}.", "success")
+
+    def set_close_schedule(self):
+        if not self.chk_close.isChecked():
+            self.close_active = False
+            self.lbl_close_status.setText("Neplánované")
+            self._log("Časovač zatvorenia vypnutý.", "info", toast=False)
+            return
+
+        when = self.dt_close.dateTime()
+        if when <= QtCore.QDateTime.currentDateTime():
+            self._log("Časovač zatvorenia: zadaný čas je v minulosti.", "error")
+            return
+
+        self.close_when = when
+        self.close_active = True
+        self.lbl_close_status.setText(f"Naplánované na {when.toString('yyyy-MM-dd HH:mm')}")
+
+        self._log(f"Časovač zatvorenia nastavený na {when.toString('yyyy-MM-dd HH:mm')}.", "success")
+
+    # ----- plánovač tick -----
+    def _scheduler_tick(self):
+        now = QtCore.QDateTime.currentDateTime()
+
+        if self.open_active and self.open_when and now >= self.open_when:
+            self._log("Časovač: spúšťam OTVORIŤ.", "info")
+            self.cmd_open()
+            self.open_active = False
+            self.lbl_open_status.setText("Neplánované")
+
+        if self.close_active and self.close_when and now >= self.close_when:
+            self._log("Časovač: spúšťam ZATVORIŤ.", "info")
+            self.cmd_close()
+            self.close_active = False
+            self.lbl_close_status.setText("Neplánované")
 
 
 def main():
