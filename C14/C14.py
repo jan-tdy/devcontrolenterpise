@@ -493,7 +493,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
 
         # Licenčný text
         lic = QtWidgets.QLabel(
-            "Licensed under the JADIV Private License v1.0 – see LICENSE file for details.",
+            "Licensed under the MIT License – see LICENSE file for details.",
             self
         )
         lic.setStyleSheet("color: blue; font-size: 8px;")
