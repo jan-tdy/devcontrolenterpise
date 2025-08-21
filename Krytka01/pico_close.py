@@ -10,6 +10,7 @@ BAUD = 115200
 VID = 0x2E8A
 PIDS_PREFER = {0x0005}
 
+
 def find_pico(cli_port: str | None):
     if cli_port:
         return cli_port
@@ -25,6 +26,7 @@ def find_pico(cli_port: str | None):
         if any(key in descr for key in ("MicroPython", "Pico", "Raspberry Pi")) and p.device.startswith(("/dev/ttyACM", "/dev/ttyUSB", "COM")):
             return p.device
     raise RuntimeError("Nenašiel som Pico. Zadaj port: pico_close.py /dev/ttyACM1 alebo PICO_PORT.")
+
 
 def main():
     cli_port = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] not in ("-h","--help") else None
