@@ -4,4 +4,6 @@ Kody budu hotove do cca 22.8.20225
 
 pred pozuitim progarmu si precitajte licenciu.
 
-pre 3 ovladacie kody pthon potrebujete spustit pip3 install pyserial pripadne nainstalovat pyserail ak ho enmate inym nastrojom
+pre 3 ovladacie kody pthon potrebujete spustit pip3 install pyserial pripadne nainstalovat pyserail ak ho enmate inym nastrojo
+
+vsetko v domovskom adresary
