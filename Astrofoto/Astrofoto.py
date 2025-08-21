@@ -1,4 +1,4 @@
-# Licensed under the JADIV Private License v1.0 – see LICENSE file for details.
+# Licensed under the mit License – see LICENSE file for details.
 # raspberried
 import sys
 import subprocess
@@ -459,7 +459,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         extra.move((self.width() - extra.width()) // 2, base_y + 60)
 
         # === Licencia ===
-        lic = QtWidgets.QLabel("Licensed under the JADIV Private License v1.0 – see LICENSE file for details.", self)
+        lic = QtWidgets.QLabel("Licensed under the MIT License – see LICENSE file for details.", self)
         lic.setStyleSheet("color: blue; font-size: 10px;")
         lic.adjustSize()
         lic.move((self.width() - lic.width()) // 2, base_y + 120)
