@@ -1,4 +1,4 @@
-# Licensed under the JADIV Private License v1.0 – see LICENSE file for details.
+# Licensed under the mit License – see LICENSE file for details.
 # ubunted
 import sys
 import subprocess
