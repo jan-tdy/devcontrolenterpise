@@ -1,10 +1,8 @@
-Welcome to the devcontrol enterpise page!
+# Welcome to the devcontrol enterpise page!
 
-[![License][license-shield]](LICENSE) [![Issues][issues-shield]][issues] [![Discussions][discussions-shield]][discussions] [![Stars][stars-shield]][stars] [![Downloads][downloads-shield]][releases] ![Maintenance](https://img.shields.io/maintenance/yes/2025?style=for-the-badge)
+[![License][license-shield]](LICENSE) [![Issues][issues-shield]][issues] [![Discussions][discussions-shield]][discussions] [![Stars][stars-shield]][stars] ![Commits](https://img.shields.io/github/commit-activity/t/jan-tdy/devcontrolenterpise?style=for-the-badge) ![Maintenance](https://img.shields.io/maintenance/yes/2025?style=for-the-badge)
 
-
-
-
+## About
 This project started by a small program to control programable socket(or other way said surge protector) in astronomical observatory, the program was bigger and bigger and we created this devcontrolenterpisesitory, currently we have two progarms for two pavilons at astronomical observatory, soon we will add next devcotrol enterpise programs. if you want to have devcontrol for you also cantact us at j44soft@gmail.com a we will make if for you.
 
 Please post any issues [here](https://github.com/jan-tdy/devcontrolenterpise/issues)
@@ -13,6 +11,7 @@ Discussion is [here](https://github.com/jan-tdy/devcontrolenterpise/discussions)
 
 You can download the program [here](https://github.com/jan-tdy/devcontrolenterpise)
 
+---
 
 Project made by japysoft tdy
 
@@ -27,5 +26,5 @@ Project made by japysoft tdy
 [discussions]: https://github.com/jan-tdy/devcontrolenterpise/discussions
 [stars-shield]: https://img.shields.io/github/stars/jan-tdy/devcontrolenterpise?style=for-the-badge
 [stars]: https://github.com/jan-tdy/devcontrolenterpise/stargazers
-[downloads-shield]: https://img.shields.io/github/downloads/jan-tdy/devcontrolenterpise/total?style=for-the-badge
+
 
