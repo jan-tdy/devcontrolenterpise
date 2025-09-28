@@ -1,6 +1,6 @@
 # Krytka na telskop verzia 01
-[![License][license-shield]](LICENSE) ![Maintenance](https://img.shields.io/maintenance/yes/2025?style=for-the-badge) ![Static Badge](https://img.shields.io/badge/First_final_version_date-26.8.20225-blue?style=for-the-badge)
-### Kody budu hotove do cca 26.8.20225!!!!
+[![License][license-shield]](LICENSE) ![Maintenance](https://img.shields.io/maintenance/yes/2025?style=for-the-badge) ![Static Badge](https://img.shields.io/badge/First_final_version_date-20.10.20225-blue?style=for-the-badge)
+### Kody budu hotove do cca 20.10.20225!!!!
 Obsah adresára: program devcontrol na tuto krytku, skript pre rozne typy astrosoftverov a kod pre mikrokontroler
 
 pred pozuitim progarmu si precitajte licenciu.
