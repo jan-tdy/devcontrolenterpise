@@ -1,7 +1,6 @@
 # Welcome to the devcontrol enterpise page!
 
-[![License][license-shield]](LICENSE) [![Issues][issues-shield]][issues] [![Stars][stars-shield]][stars] ![Commits](https://img.shields.io/github/commit-activity/t/jan-tdy/devcontrolenterpise?style=for-the-badge) [![Maintenance](https://img.shields.io/maintenance/yes/2025?style=for-the-badge)](https://img.shields.io/badge/maintenance-until_5.10.2025-red) [![Discussions][discussions-shield]][discussions]
-
+[![License][license-shield]](LICENSE) [![Issues][issues-shield]][issues] [![Stars][stars-shield]][stars] ![Commits](https://img.shields.io/github/commit-activity/t/jan-tdy/devcontrolenterpise?style=for-the-badge) ![Static Badge](https://img.shields.io/badge/maintenance-until_5.10.2025_except_telescope_cover-red)
 ## About
 This project started by a small program to control programable socket(or other way said surge protector) in astronomical observatory, the program was bigger and bigger and we created this devcontrolenterpisesitory, currently we have two progarms for two pavilons at astronomical observatory, soon we will add next devcotrol enterpise programs. if you want to have devcontrol for you also cantact us at j44soft@gmail.com a we will make if for you.
 
