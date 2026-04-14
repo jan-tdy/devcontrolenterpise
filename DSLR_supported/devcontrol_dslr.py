@@ -14,7 +14,7 @@ from PyQt6.QtGui import QFont
 
 # --- KONFIGURÁCIA ---
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/DSLR_supported/devcontrol_dslr.py"
-CURRENT_VERSION = "2026.04_1.1" 
+CURRENT_VERSION = "2026.4_1.2" 
 
 class UpdateWorker(QThread):
     update_available = pyqtSignal(str)
@@ -31,9 +31,9 @@ class GphotoWorker(QThread):
     log_signal = pyqtSignal(str)
     finished_signal = pyqtSignal(bool)
     
-    def __init__(self, port, settings, cmd_type="sequence"):
+    def __init__(self, port_arg, settings, cmd_type="sequence"):
         super().__init__()
-        self.port = port
+        self.port = port_arg # list napr. ["--port=ptpip:192.168.5.204"]
         self.s = settings
         self.cmd_type = cmd_type
         self.is_running = True
@@ -45,12 +45,13 @@ class GphotoWorker(QThread):
             return
 
         self.log_signal.emit(f"--- ŠTART ASTRO SEKVENCIE v{CURRENT_VERSION} ---")
+        # Nastavenie RAW formátu pred začiatkom
         self.execute(["gphoto2"] + self.port + ["--set-config", "imageformat=RAW"])
         
         for i in range(1, self.s['frames'] + 1):
             if not self.is_running: break
             
-            # Generovanie názvu podľa vzoru
+            # Generovanie lokálneho názvu podľa vzoru pre logovanie
             now = datetime.datetime.now()
             fn = self.s['pattern']
             fn = fn.replace("%O", self.s['target'])
@@ -63,12 +64,12 @@ class GphotoWorker(QThread):
             
             self.log_signal.emit(f"\nSnímka {i}/{self.s['frames']} -> {fn}.CR2")
 
+            # Použitie natívnych gphoto2 prepínačov podľa tvojho helpu
             if self.s['shutter_val'] == "bulb":
+                # Použijeme prepínač --bulb (-B) namiesto manuálneho set-config bulb
                 cmd = ["gphoto2"] + self.port + [
-                    "--set-config", "bulb=1",
-                    "--wait-event", f"{self.s['bulb_time']}s",
-                    "--set-config", "bulb=0",
-                    "--wait-event-and-download", "2s",
+                    "--bulb", str(self.s['bulb_time']),
+                    "--capture-image-and-download",
                     "--filename", f"{fn}.CR2"
                 ]
             else:
@@ -77,8 +78,13 @@ class GphotoWorker(QThread):
                     "--filename", f"{fn}.CR2"
                 ]
             
-            if not self.execute(cmd): break
+            success = self.execute(cmd)
+            if not success:
+                self.log_signal.emit("Chyba pri vykonávaní príkazu. Skontroluj spojenie.")
+                break
+                
             if i < self.s['frames'] and self.is_running:
+                self.log_signal.emit(f"Pauza medzi snímkami: {self.s['interval']}s")
                 time.sleep(self.s['interval'])
                 
         self.finished_signal.emit(True)
@@ -88,13 +94,18 @@ class GphotoWorker(QThread):
         try:
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             for line in iter(p.stdout.readline, ''):
-                if not self.is_running: p.terminate(); return False
+                if not self.is_running: 
+                    p.terminate()
+                    return False
                 self.log_signal.emit(line.strip())
-            p.wait(); return p.returncode == 0
+            p.wait()
+            return p.returncode == 0
         except Exception as e:
-            self.log_signal.emit(f"Chyba: {e}"); return False
+            self.log_signal.emit(f"Systémová chyba: {e}")
+            return False
 
-    def stop(self): self.is_running = False
+    def stop(self):
+        self.is_running = False
 
 class DevControlApp(QMainWindow):
     def __init__(self):
@@ -117,9 +128,9 @@ class DevControlApp(QMainWindow):
         cl = QHBoxLayout()
         self.usb_r = QRadioButton("USB"); self.usb_r.setChecked(True)
         self.wifi_r = QRadioButton("WiFi (PTP/IP)")
-        self.ip_in = QLineEdit("192.168.1.100"); self.ip_in.setEnabled(False)
+        self.ip_in = QLineEdit("192.168.5.204"); self.ip_in.setEnabled(False)
         self.wifi_r.toggled.connect(lambda: self.ip_in.setEnabled(self.wifi_r.isChecked()))
-        self.det_b = QPushButton("Detekovať"); self.det_b.clicked.connect(self.detect)
+        self.det_b = QPushButton("Test Spojenia"); self.det_b.clicked.connect(self.detect)
         cl.addWidget(self.usb_r); cl.addWidget(self.wifi_r); cl.addWidget(QLabel("IP:")); cl.addWidget(self.ip_in); cl.addWidget(self.det_b)
         conn_g.setLayout(cl); top.addWidget(conn_g, 4)
         
@@ -146,18 +157,20 @@ class DevControlApp(QMainWindow):
         type_l.addWidget(QLabel("Typ:")); type_l.addWidget(self.type_cb); el.addLayout(type_l)
 
         iso_l = QHBoxLayout()
-        self.iso_cb = QComboBox(); self.iso_cb.addItems(["800", "1600", "3200", "6400", "12800"])
+        self.iso_cb = QComboBox(); self.iso_cb.addItems(["100", "200", "400", "800", "1600", "3200", "6400", "12800"])
+        self.iso_cb.setCurrentText("1600")
         iso_l.addWidget(QLabel("ISO:")); iso_l.addWidget(self.iso_cb); el.addLayout(iso_l)
 
         shut_l = QHBoxLayout()
-        self.shut_cb = QComboBox(); self.shut_cb.addItems(["10", "30", "bulb"])
+        self.shut_cb = QComboBox(); self.shut_cb.addItems(["1/100", "1", "10", "30", "bulb"])
+        self.shut_cb.setCurrentText("bulb")
         self.b_spin = QSpinBox(); self.b_spin.setRange(1, 7200); self.b_spin.setValue(300)
         shut_l.addWidget(QLabel("Čas:")); shut_l.addWidget(self.shut_cb); shut_l.addWidget(self.b_spin); el.addLayout(shut_l)
         
-        self.app_b = QPushButton("Aplikovať nastavenia"); self.app_b.clicked.connect(self.apply_settings)
+        self.app_b = QPushButton("Aplikovať ISO/Shutter"); self.app_b.clicked.connect(self.apply_settings)
         el.addWidget(self.app_b); exp_g.setLayout(el); mid.addWidget(exp_g)
 
-        opt_g = QGroupBox("Optika & Iné")
+        opt_g = QGroupBox("Astro Špeciál")
         ol = QVBoxLayout()
         self.mlu_check = QCheckBox("Mirror Lockup"); self.mlu_check.setChecked(True)
         self.lcd_check = QCheckBox("Vypnúť LCD (Heat reduction)"); self.lcd_check.setChecked(True)
@@ -171,42 +184,55 @@ class DevControlApp(QMainWindow):
         main.addLayout(mid)
 
         # --- Sekcia 4: Sekvencer ---
-        cap_g = QGroupBox("Snímanie")
+        cap_g = QGroupBox("Sekvencia snímania")
         cal = QHBoxLayout()
         self.frames_s = QSpinBox(); self.frames_s.setRange(1, 9999); self.frames_s.setValue(30)
         self.int_s = QSpinBox(); self.int_s.setValue(5)
-        self.start_b = QPushButton("ŠTART"); self.start_b.setStyleSheet("background-color: #500;")
+        self.start_b = QPushButton("ŠTART"); self.start_b.setStyleSheet("background-color: #500; font-weight: bold;")
         self.start_b.clicked.connect(self.start_seq)
         self.stop_b = QPushButton("STOP"); self.stop_b.setEnabled(False); self.stop_b.clicked.connect(self.stop_seq)
         cal.addWidget(QLabel("Počet:")); cal.addWidget(self.frames_s); cal.addWidget(QLabel("Pauza (s):")); cal.addWidget(self.int_s)
         cal.addWidget(self.start_b); cal.addWidget(self.stop_b)
         cap_g.setLayout(cal); main.addWidget(cap_g)
 
-        self.log = QTextEdit(); self.log.setReadOnly(True); main.addWidget(self.log)
+        self.log = QTextEdit(); self.log.setReadOnly(True); self.log.setFont(QFont("Monospace", 9))
+        main.addWidget(self.log)
 
     def apply_astro_theme(self):
         self.setStyleSheet("""
-            QMainWindow, QWidget, QDialog { background-color: #0a0a0a; color: #ff3333; font-family: 'Segoe UI', Arial; }
-            QGroupBox { border: 1px solid #330000; border-radius: 4px; margin-top: 15px; font-weight: bold; }
-            QPushButton { background-color: #1a1a1a; border: 1px solid #550000; color: #ff4444; padding: 5px; }
-            QPushButton:hover { background-color: #300; }
-            QLineEdit, QComboBox, QSpinBox, QTextEdit { background-color: #111; border: 1px solid #220000; color: #ff9999; }
+            QMainWindow, QWidget, QDialog { background-color: #080808; color: #ff3333; font-family: 'Segoe UI', sans-serif; }
+            QGroupBox { border: 1px solid #440000; border-radius: 4px; margin-top: 15px; font-weight: bold; }
+            QPushButton { background-color: #1a1a1a; border: 1px solid #660000; color: #ff4444; padding: 5px; }
+            QPushButton:hover { background-color: #400; }
+            QLineEdit, QComboBox, QSpinBox, QTextEdit { background-color: #121212; border: 1px solid #330000; color: #ffaaaa; }
+            QCheckBox { color: #ff6666; }
         """)
 
-    def get_port(self): return ["--port", f"ptpip:{self.ip_in.text()}"] if self.wifi_r.isChecked() else []
-    def detect(self): self.run_cmd(["--auto-detect"])
-    def focus(self, v): self.run_cmd(["--set-config", f"manualfocusdrive={v}"])
+    def get_port(self): 
+        # Oprava syntaxe: gphoto2 vyžaduje --port=FILENAME
+        return [f"--port=ptpip:{self.ip_in.text()}"] if self.wifi_r.isChecked() else []
+
+    def detect(self): 
+        self.run_cmd(["--auto-detect"])
+
+    def focus(self, v): 
+        self.run_cmd(["--set-config", f"manualfocusdrive={v}"])
     
     def apply_settings(self):
         c = ["--set-config", f"iso={self.iso_cb.currentText()}"]
-        if self.shut_cb.currentText() != "bulb": c.extend(["--set-config", f"shutterspeed={self.shut_cb.currentText()}"])
-        if self.mlu_check.isChecked(): c.extend(["--set-config", "mirrorlockup=On"])
+        if self.shut_cb.currentText() != "bulb": 
+            c.extend(["--set-config", f"shutterspeed={self.shut_cb.currentText()}"])
+        if self.mlu_check.isChecked(): 
+            c.extend(["--set-config", "mirrorlockup=On"])
+        if self.lcd_check.isChecked():
+            c.extend(["--set-config", "viewfinder=Off"])
         self.run_cmd(c)
 
     def run_cmd(self, args):
         s = {'cmd': ["gphoto2"] + self.get_port() + args}
         self.worker = GphotoWorker(self.get_port(), s, "single")
-        self.worker.log_signal.connect(self.log.append); self.worker.start()
+        self.worker.log_signal.connect(self.log.append)
+        self.worker.start()
 
     def start_seq(self):
         s = {
@@ -219,20 +245,31 @@ class DevControlApp(QMainWindow):
         self.worker = GphotoWorker(self.get_port(), s, "sequence")
         self.worker.log_signal.connect(self.log.append)
         self.worker.finished_signal.connect(lambda: self.set_ui(True))
-        self.set_ui(False); self.worker.start()
+        self.set_ui(False)
+        self.worker.start()
 
     def stop_seq(self): 
         if self.worker: self.worker.stop()
-    def set_ui(self, st): self.start_b.setEnabled(st); self.stop_b.setEnabled(not st)
+
+    def set_ui(self, st): 
+        self.start_b.setEnabled(st); self.stop_b.setEnabled(not st)
 
     def prompt_update(self, c):
-        if QMessageBox.question(self, "Update", "Aktualizovať?") == QMessageBox.StandardButton.Yes:
-            with open(__file__, 'w') as f: f.write(c)
-            sys.exit()
+        if QMessageBox.question(self, "OTA Update", "K dispozícii je nová verzia na GitHube. Aktualizovať?") == QMessageBox.StandardButton.Yes:
+            try:
+                with open(__file__, 'w', encoding='utf-8') as f: f.write(c)
+                QMessageBox.information(self, "Hotovo", "Aktualizované. Reštartujte aplikáciu.")
+                sys.exit()
+            except Exception as e:
+                QMessageBox.critical(self, "Chyba", f"Nepodarilo sa aktualizovať: {e}")
 
     def show_help(self):
-        QMessageBox.information(self, "Pattern Help", 
-            "Zástupné znaky pre názov:\n%O - Objekt\n%T - Typ (Light/Dark...)\n%N - Číslo snímky\n%I - ISO\n%E - Expozícia\n%D - Dátum\n%H - Čas")
+        QMessageBox.information(self, "Pattern & Astro Help", 
+            "Zástupné znaky:\n%O - Objekt\n%T - Typ\n%N - Poradie\n%I - ISO\n%E - Čas\n%D - Dátum\n%H - Čas\n\n"
+            "Pre IFN: Odporúčaná pauza aspoň 5s pre chladenie čipu a ustálenie montáže.")
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv); win = DevControlApp(); win.show(); sys.exit(app.exec())
+    app = QApplication(sys.argv)
+    win = DevControlApp()
+    win.show()
+    sys.exit(app.exec())
