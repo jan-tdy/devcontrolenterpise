@@ -14,7 +14,7 @@ from PyQt6.QtGui import QFont
 
 # --- KONFIGURÁCIA ---
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/DSLR_supported/devcontrol_dslr.py"
-CURRENT_VERSION = "2026.4_1.2" 
+CURRENT_VERSION = "2026.4_1.3" 
 
 class UpdateWorker(QThread):
     update_available = pyqtSignal(str)
@@ -22,7 +22,7 @@ class UpdateWorker(QThread):
         try:
             res = requests.get(GITHUB_RAW_URL, timeout=5)
             if res.status_code == 200:
-                match = re.search(r'CURRENT_VERSION = "([\d.]+)"', res.text)
+                match = re.search(r'CURRENT_VERSION = "([\d._]+)"', res.text)
                 if match and match.group(1) != CURRENT_VERSION:
                     self.update_available.emit(res.text)
         except: pass
@@ -33,7 +33,7 @@ class GphotoWorker(QThread):
     
     def __init__(self, port_arg, settings, cmd_type="sequence"):
         super().__init__()
-        self.port = port_arg # list napr. ["--port=ptpip:192.168.5.204"]
+        self.port = port_arg 
         self.s = settings
         self.cmd_type = cmd_type
         self.is_running = True
@@ -45,28 +45,35 @@ class GphotoWorker(QThread):
             return
 
         self.log_signal.emit(f"--- ŠTART ASTRO SEKVENCIE v{CURRENT_VERSION} ---")
-        # Nastavenie RAW formátu pred začiatkom
+        
+        # Stabilizácia: Nastavenie RAW formátu s pauzou
         self.execute(["gphoto2"] + self.port + ["--set-config", "imageformat=RAW"])
+        time.sleep(1) 
         
         for i in range(1, self.s['frames'] + 1):
             if not self.is_running: break
             
-            # Generovanie lokálneho názvu podľa vzoru pre logovanie
+            # Generovanie názvu
             now = datetime.datetime.now()
             fn = self.s['pattern']
             fn = fn.replace("%O", self.s['target'])
             fn = fn.replace("%T", self.s['type'])
             fn = fn.replace("%N", str(i).zfill(3))
             fn = fn.replace("%I", self.s['iso'])
-            fn = fn.replace("%E", str(self.s['exp_label']))
+            
+            # OPRAVA: Odstránenie lomeno z času expozície pre názov súboru (kvôli 1/100)
+            exp_clean = str(self.s['exp_label']).replace("/", "-")
+            fn = fn.replace("%E", exp_clean)
+            
             fn = fn.replace("%D", now.strftime("%Y%m%d"))
             fn = fn.replace("%H", now.strftime("%H%M%S"))
             
+            # Vyčistenie názvu od nebezpečných znakov pre OS
+            fn = re.sub(r'[\\/*?:"<>|]', "", fn)
+            
             self.log_signal.emit(f"\nSnímka {i}/{self.s['frames']} -> {fn}.CR2")
 
-            # Použitie natívnych gphoto2 prepínačov podľa tvojho helpu
             if self.s['shutter_val'] == "bulb":
-                # Použijeme prepínač --bulb (-B) namiesto manuálneho set-config bulb
                 cmd = ["gphoto2"] + self.port + [
                     "--bulb", str(self.s['bulb_time']),
                     "--capture-image-and-download",
@@ -80,8 +87,12 @@ class GphotoWorker(QThread):
             
             success = self.execute(cmd)
             if not success:
-                self.log_signal.emit("Chyba pri vykonávaní príkazu. Skontroluj spojenie.")
-                break
+                self.log_signal.emit("Chyba komunikácie. Čakám 3s na reset a skúsim znova...")
+                time.sleep(3)
+                # Skúsime jeden retry pre WiFi stabilitu
+                if not self.execute(cmd):
+                    self.log_signal.emit("Kritická chyba spojenia.")
+                    break
                 
             if i < self.s['frames'] and self.is_running:
                 self.log_signal.emit(f"Pauza medzi snímkami: {self.s['interval']}s")
@@ -209,7 +220,6 @@ class DevControlApp(QMainWindow):
         """)
 
     def get_port(self): 
-        # Oprava syntaxe: gphoto2 vyžaduje --port=FILENAME
         return [f"--port=ptpip:{self.ip_in.text()}"] if self.wifi_r.isChecked() else []
 
     def detect(self): 
@@ -219,14 +229,32 @@ class DevControlApp(QMainWindow):
         self.run_cmd(["--set-config", f"manualfocusdrive={v}"])
     
     def apply_settings(self):
-        c = ["--set-config", f"iso={self.iso_cb.currentText()}"]
+        # Rozdelíme príkazy na samostatné volania s pauzami pre stabilitu PTP
+        self.log.append("--- Aplikujem nastavenia (stabilizovaný režim) ---")
+        base = ["gphoto2"] + self.get_port()
+        
+        # ISO
+        self.run_raw_cmd(base + ["--set-config", f"iso={self.iso_cb.currentText()}"])
+        time.sleep(0.5)
+        
+        # Shutter
         if self.shut_cb.currentText() != "bulb": 
-            c.extend(["--set-config", f"shutterspeed={self.shut_cb.currentText()}"])
+            self.run_raw_cmd(base + ["--set-config", f"shutterspeed={self.shut_cb.currentText()}"])
+            time.sleep(0.5)
+            
+        # Astro doplnky - MLU môže zlyhať na niektorých FW, preto ignorujeme chybu
         if self.mlu_check.isChecked(): 
-            c.extend(["--set-config", "mirrorlockup=On"])
+            self.run_raw_cmd(base + ["--set-config", "mirrorlockup=On"])
+            time.sleep(0.5)
+            
         if self.lcd_check.isChecked():
-            c.extend(["--set-config", "viewfinder=Off"])
-        self.run_cmd(c)
+            self.run_raw_cmd(base + ["--set-config", "viewfinder=Off"])
+
+    def run_raw_cmd(self, full_cmd_list):
+        s = {'cmd': full_cmd_list}
+        self.worker = GphotoWorker(self.get_port(), s, "single")
+        self.worker.log_signal.connect(self.log.append)
+        self.worker.start()
 
     def run_cmd(self, args):
         s = {'cmd': ["gphoto2"] + self.get_port() + args}
@@ -265,8 +293,8 @@ class DevControlApp(QMainWindow):
 
     def show_help(self):
         QMessageBox.information(self, "Pattern & Astro Help", 
-            "Zástupné znaky:\n%O - Objekt\n%T - Typ\n%N - Poradie\n%I - ISO\n%E - Čas\n%D - Dátum\n%H - Čas\n\n"
-            "Pre IFN: Odporúčaná pauza aspoň 5s pre chladenie čipu a ustálenie montáže.")
+            "Zástupné znaky:\n%O - Objekt\n%T - Typ\n%N - Poradie\n%I - ISO\n%E - Čas (automaticky mení / na -)\n%D - Dátum\n%H - Čas\n\n"
+            "WiFi TIP: Ak dostávate 'PTP Device Busy', zväčšite pauzu medzi snímkami.")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
