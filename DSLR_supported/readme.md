@@ -44,6 +44,3 @@ You can customize how your RAW files are saved using the following wildcards:
  * %H - Current Time (HHMMSS)
 ### Troubleshooting WiFi (PTP/IP)
 If you encounter a *'PTP Device Busy'* error while using the WiFi connection, try increasing the interval (pause) between frames in the sequencer settings to give the camera's network buffer more time to clear.
-```
-
-```
