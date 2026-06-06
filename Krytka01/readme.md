@@ -1,12 +1,14 @@
-# Program for sontrolling motorized telescope cover
+# Motorized Telescope Cover Controller
 [![License][license-shield]](LICENSE) ![Maintenance](https://img.shields.io/maintenance/yes/2026?style=for-the-badge)
 
-## Obsah adresára
-Program devcontrol na tuto krytku, skript pre rozne typy astrosoftverov a kod pre mikrokontroler
+## Directory Contents
+This repository includes everything needed to operate the automated cover:
+* **DevControl Program:** The main application for controlling the motorized cover.
+* **Astro-software Scripts:** Integration scripts compatible with various astronomy software platforms.
+* **Microcontroller Code:** The firmware required for the hardware controller.
 
+## Prerequisites
+To install the necessary Python libraries, run the following command:
 
-## Potrebné knižnice
-Spustite ''pip3 install pyserial''
-
-[license-shield]: https://img.shields.io/github/license/jan-tdy/devcontrolenterpise?style=for-the-badge
-[issues-shield]: https://img.shields.io/github/issues/jan-tdy/devcontrolenterpise?style=for-the-badge
+```bash
+pip3 install pyserial
