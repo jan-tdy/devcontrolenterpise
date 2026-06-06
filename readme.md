@@ -3,7 +3,7 @@
 
 Feel free to fork this repo for your needs!
 
-[![License][license-shield]](LICENSE) [![Issues][issues-shield]][issues] [![Stars][stars-shield]][stars] ![Commits](https://img.shields.io/github/commit-activity/t/jan-tdy/devcontrolenterpise?style=for-the-badge) ![Static Badge](https://img.shields.io/badge/maintenance-YES-green?style=for-the-badge)
+[![License][license-shield]](LICENSE) [![Issues][issues-shield]][issues]  ![Static Badge](https://img.shields.io/badge/maintenance-YES-green?style=for-the-badge)
 
 ## Warning
 I am able to create smillar program for someone but "atacama" and "astrofoto" are not maintained, we now work on devcontrol2, see: 
