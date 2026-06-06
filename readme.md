@@ -3,7 +3,7 @@
 
 ### Feel free to fork this repo for your needs!
 
-[![License][license-shield]](LICENSE) [![Issues][issues-shield]][issues]  ![Static Badge](https://img.shields.io/badge/maintenance-YES-green?style=for-the-badge)
+ [![Issues][issues-shield]][issues]  ![Static Badge](https://img.shields.io/badge/maintenance-Partially-green?style=for-the-badge)
 
 ## Warning
 I am able to create smillar program for someone but "atacama" and "astrofoto" are not maintained, we now work on devcontrol2, see: https://devcontrol2.gitbook.io/devcontrol2
