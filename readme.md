@@ -1,12 +1,12 @@
 # Welcome to the devcontrol enterpise page!
 
 
-Feel free to fork this repo for your needs!
+### Feel free to fork this repo for your needs!
 
 [![License][license-shield]](LICENSE) [![Issues][issues-shield]][issues]  ![Static Badge](https://img.shields.io/badge/maintenance-YES-green?style=for-the-badge)
 
 ## Warning
-I am able to create smillar program for someone but "atacama" and "astrofoto" are not maintained, we now work on devcontrol2, see: 
+I am able to create smillar program for someone but "atacama" and "astrofoto" are not maintained, we now work on devcontrol2, see: https://devcontrol2.gitbook.io/devcontrol2
 ## About
 This project started by a small program to control programable socket(or other way said surge protector) in astronomical observatory, the program was bigger and bigger and we created this devcontrolenterprise repository, currently we have two progarms for two pavilons at astronomical observatory, soon we will add next devcotrol enterpise programs. if you want to have devcontrol for you also cantact us at j44soft@gmail.com a we will make if for you.
 
@@ -18,7 +18,7 @@ You can download the program [here](https://github.com/jan-tdy/devcontrolenterpi
 
 ---
 
-Project made by japysoft tdy
+Project made by JapySoft TDY
 
 
 
