@@ -140,6 +140,7 @@ class GphotoWorker(QThread):
             for line in iter(p.stdout.readline, ''):
                 if not self.is_running:
                     p.terminate()
+                    p.wait()  # reap process to avoid zombie
                     return False
                 self.log_signal.emit(line.strip())
             p.wait()
@@ -385,8 +386,8 @@ class DevControlApp(QMainWindow):
         self.stop_b.setEnabled(not bool(enabled))
 
     def prompt_update(self, new_code: str):
-        # Security note: this writes downloaded code to __file__.
-        # Only accept updates from your own trusted repository.
+        # SECURITY: downloaded code is written directly to __file__ with no signature
+        # verification. Only accept from your own trusted repository over HTTPS.
         if QMessageBox.question(
             self,
             "OTA Update",

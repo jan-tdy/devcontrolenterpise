@@ -35,13 +35,22 @@ ICON_OFF = APP_DIR / "led_red.png"     # state 0 = closed
 REFRESH_MS = 3000
 
 
-def run_script(path: Path) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [sys.executable, str(path)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+# ── Background script runner ──────────────────────────────────────────────────
+
+class ScriptWorker(QtCore.QThread):
+    """Runs a Python script in a background thread; emits done(returncode, stdout, stderr)."""
+    done = QtCore.pyqtSignal(int, str, str)
+
+    def __init__(self, path: Path):
+        super().__init__()
+        self._path = path
+
+    def run(self):
+        proc = subprocess.run(
+            [sys.executable, str(self._path)],
+            capture_output=True, text=True, check=False,
+        )
+        self.done.emit(proc.returncode, proc.stdout or "", proc.stderr or "")
 
 
 # ── OTA ──────────────────────────────────────────────────────────────────────
@@ -88,7 +97,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
             lay.addWidget(logo_lbl)
 
         title = QtWidgets.QLabel(
-            f"🛰️  Jadiv DEVCONTROL – Telescope Cover  v{CURRENT_VERSION}"
+            f"\U0001f6f0️  Jadiv DEVCONTROL – Telescope Cover  v{CURRENT_VERSION}"
         )
         title.setAlignment(QtCore.Qt.AlignCenter)
         title.setStyleSheet(
@@ -132,7 +141,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
             QtCore.QThread.msleep(350)
 
 
-# ── Toast notification ───────────────────────────────────────────────────────────
+# ── Toast notification ────────────────────────────────────────────────────────
 
 class Toast(QtWidgets.QLabel):
     _STYLE = {
@@ -144,6 +153,7 @@ class Toast(QtWidgets.QLabel):
     def __init__(self, msg: str, kind: str = "info", parent=None):
         super().__init__(msg, parent)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool)
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         style = self._STYLE.get(kind, self._STYLE["info"])
         self.setStyleSheet(
             f"QLabel{{{style}border-radius:10px;padding:8px 14px;font-size:10pt;}}"
@@ -157,7 +167,7 @@ class Toast(QtWidgets.QLabel):
         self.show()
 
 
-# ── Main window ───────────────────────────────────────────────────────────────────
+# ── Main window ───────────────────────────────────────────────────────────────
 
 class Main(QtWidgets.QMainWindow):
     _SB_STYLE = {
@@ -168,7 +178,7 @@ class Main(QtWidgets.QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"🛰️  Jadiv DEVCONTROL – Telescope Cover  v{CURRENT_VERSION}")
+        self.setWindowTitle(f"\U0001f6f0️  Jadiv DEVCONTROL – Telescope Cover  v{CURRENT_VERSION}")
         self.resize(700, 580)
 
         logo_path = APP_DIR / "logo.png"
@@ -177,6 +187,9 @@ class Main(QtWidgets.QMainWindow):
 
         self._toasts: list = []
         self._last_state = None   # None / 0 / 1
+        self._check_worker = None  # background state-check worker
+        self._cmd_worker   = None  # background command worker
+        self._up_worker    = None  # background OTA check worker
 
         # ── Central widget
         central = QtWidgets.QWidget()
@@ -189,7 +202,7 @@ class Main(QtWidgets.QMainWindow):
         top = QtWidgets.QHBoxLayout()
         top.setSpacing(8)
 
-        self.btn_open = QtWidgets.QPushButton("🔓  Open Cover")
+        self.btn_open = QtWidgets.QPushButton("\U0001f513  Open Cover")
         self.btn_open.setMinimumHeight(40)
         self.btn_open.setStyleSheet(
             "QPushButton{border:2px solid #16a34a;border-radius:7px;padding:4px 14px;"
@@ -198,7 +211,7 @@ class Main(QtWidgets.QMainWindow):
             "QPushButton:disabled{border-color:#6b7280;color:#9ca3af;}"
         )
 
-        self.btn_close = QtWidgets.QPushButton("🔒  Close Cover")
+        self.btn_close = QtWidgets.QPushButton("\U0001f512  Close Cover")
         self.btn_close.setMinimumHeight(40)
         self.btn_close.setStyleSheet(
             "QPushButton{border:2px solid #dc2626;border-radius:7px;padding:4px 14px;"
@@ -207,7 +220,7 @@ class Main(QtWidgets.QMainWindow):
             "QPushButton:disabled{border-color:#6b7280;color:#9ca3af;}"
         )
 
-        self.btn_check = QtWidgets.QPushButton("🔄  Refresh")
+        self.btn_check = QtWidgets.QPushButton("\U0001f504  Refresh")
         self.btn_check.setMinimumHeight(40)
         self.btn_check.setStyleSheet(
             "QPushButton{border:1px solid #9ca3af;border-radius:7px;padding:4px 10px;}"
@@ -284,10 +297,11 @@ class Main(QtWidgets.QMainWindow):
         root.addWidget(sched_box)
         root.addWidget(log_box)
 
-        # Load existing log
+        # Load last 100 lines of existing log (limit prevents startup freeze on large files)
         try:
             if LOG_FILE.exists():
-                for line in LOG_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
+                lines = LOG_FILE.read_text(encoding="utf-8", errors="ignore").splitlines()
+                for line in lines[-100:]:
                     self.log.append(f'<span style="color:#64748b">{line}</span>')
         except Exception:
             pass
@@ -311,9 +325,9 @@ class Main(QtWidgets.QMainWindow):
 
         # ── Timers & state
         self.open_active  = False
-        self.open_when:  QtCore.QDateTime | None = None
+        self.open_when    = None
         self.close_active = False
-        self.close_when: QtCore.QDateTime | None = None
+        self.close_when   = None
 
         self.timer_state = QtCore.QTimer(self)
         self.timer_state.timeout.connect(self.refresh_state)
@@ -325,7 +339,7 @@ class Main(QtWidgets.QMainWindow):
 
         QtCore.QTimer.singleShot(400, self.refresh_state)
 
-        # Background OTA check
+        # Background OTA check on startup
         self._up_worker = UpdateWorker(self)
         self._up_worker.update_available.connect(self._prompt_update)
         self._up_worker.start()
@@ -372,33 +386,49 @@ class Main(QtWidgets.QMainWindow):
             t_widget.show_()
             self._toasts = [t for t in self._toasts if t.isVisible()]
 
-    # ── Script runner
-
-    def _run_and_report(self, path: Path, action_name: str) -> bool:
-        if not path.exists():
-            self._log(f"Missing file: {path}", "error")
-            return False
-        proc = run_script(path)
-        if proc.returncode == 0:
-            self._log(f"OK: {action_name}", "success")
-            return True
-        err = (proc.stderr or proc.stdout or "").strip()
-        self._log(f"Error – {action_name}: {err}", "error")
-        return False
-
-    # ── Button actions
+    # ── Button actions (non-blocking via ScriptWorker)
 
     def cmd_open(self):
-        if self._run_and_report(PY_OPEN, "Open cover"):
-            self.refresh_state()
+        if not PY_OPEN.exists():
+            self._log(f"Missing file: {PY_OPEN}", "error")
+            return
+        if self._cmd_worker and self._cmd_worker.isRunning():
+            return
+        self.btn_open.setEnabled(False)
+        self.btn_close.setEnabled(False)
+        self._cmd_worker = ScriptWorker(PY_OPEN)
+        self._cmd_worker.done.connect(
+            lambda rc, out, err: self._on_cmd_done(rc, out, err, "Open cover")
+        )
+        self._cmd_worker.start()
 
     def cmd_close(self):
-        if self._run_and_report(PY_CLOSE, "Close cover"):
-            self.refresh_state()
+        if not PY_CLOSE.exists():
+            self._log(f"Missing file: {PY_CLOSE}", "error")
+            return
+        if self._cmd_worker and self._cmd_worker.isRunning():
+            return
+        self.btn_open.setEnabled(False)
+        self.btn_close.setEnabled(False)
+        self._cmd_worker = ScriptWorker(PY_CLOSE)
+        self._cmd_worker.done.connect(
+            lambda rc, out, err: self._on_cmd_done(rc, out, err, "Close cover")
+        )
+        self._cmd_worker.start()
 
-    # ── State polling
+    def _on_cmd_done(self, returncode: int, stdout: str, stderr: str, action_name: str):
+        if returncode == 0:
+            self._log(f"OK: {action_name}", "success")
+        else:
+            err = (stderr or stdout or "").strip()
+            self._log(f"Error – {action_name}: {err}", "error")
+        self.refresh_state()
+
+    # ── State polling (non-blocking via ScriptWorker)
 
     def refresh_state(self):
+        if self._check_worker and self._check_worker.isRunning():
+            return  # previous check still in flight
         if not PY_CHECK.exists():
             if self._last_state is not None:
                 self._set_icon(ICON_DEF)
@@ -407,14 +437,16 @@ class Main(QtWidgets.QMainWindow):
                 self._update_status_bar("unknown")
                 self._sync_buttons(None)
             return
+        self._check_worker = ScriptWorker(PY_CHECK)
+        self._check_worker.done.connect(self._on_state_result)
+        self._check_worker.start()
 
-        proc = run_script(PY_CHECK)
-        out  = (proc.stdout or "").strip()
-
-        if proc.returncode != 0:
+    def _on_state_result(self, returncode: int, stdout: str, stderr: str):
+        out = stdout.strip()
+        if returncode != 0:
             if self._last_state is not None:
                 self._set_icon(ICON_DEF)
-                self._log(f"Check error: {(proc.stderr or out).strip()}", "error", toast=False)
+                self._log(f"Check error: {(stderr or out).strip()}", "error", toast=False)
                 self._last_state = None
                 self._update_status_bar("unknown")
                 self._sync_buttons(None)
@@ -510,6 +542,9 @@ class Main(QtWidgets.QMainWindow):
     # ── OTA
 
     def _check_updates(self):
+        if self._up_worker and self._up_worker.isRunning():
+            self._log("Update check already in progress.", "info", toast=False)
+            return
         self._log("Checking for updates…", "info", toast=False)
         worker = UpdateWorker(self)
         worker.update_available.connect(self._prompt_update)
@@ -520,6 +555,8 @@ class Main(QtWidgets.QMainWindow):
         self._up_worker = worker
 
     def _prompt_update(self, new_code: str):
+        # SECURITY: downloaded code is written directly to __file__ with no signature
+        # verification. Only accept from your own trusted repository over HTTPS.
         reply = QtWidgets.QMessageBox.question(
             self,
             "Update available",
