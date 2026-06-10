@@ -1,8 +1,9 @@
-# Licensed under the mit License – see LICENSE file for details.
+# Licensed under the MIT License – see LICENSE file for details.
 # raspberried
 import sys
 import subprocess
 import time
+from pathlib import Path
 import PyQt5.QtWidgets as QtWidgets
 from PyQt5.QtWidgets import QMessageBox
 import PyQt5.QtGui as QtGui
@@ -14,26 +15,28 @@ from PyQt5.QtWidgets import QInputDialog
 
 
 IS_DEV = "-developer" in sys.argv
-IS_FLAG1 = "-flag1" in sys.argv # add new method
+IS_FLAG1 = "-flag1" in sys.argv
 
 ZASUVKY = {
     "KKmaly": 4,
     "ONTC": 2,
     "Parmezan": 1
 }
-PROGRAM_CESTA = "/home/dpv/j44softapps-socketcontrol/C14.py"
 SSH_USER = "dpv"
-SSH_PASS = "otj0711"
+SSH_PASS = "otj0711"  # WARNING: credential in source — not for public release
 CENTRAL2_IP = "172.20.20.133"
 AZ2000_IP = "172.20.20.116"
 SSH_USER2 = "pi2"
-SSH_PASS2 = "otj0711"
+SSH_PASS2 = "otj0711"  # WARNING: credential in source — not for public release
+# TODO: update after repo move
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/Astrofoto/Astrofoto.py"
 
 
 class Toast(QtWidgets.QLabel):
     def __init__(self, msg, typ="info", parent=None):
         super().__init__(msg, parent)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Tool)
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.setStyleSheet(f"""
             QLabel {{
                 background-color: {'#135b13' if typ == 'success' else '#dc2525' if typ == 'error' else '#b9e9f1'};
@@ -62,7 +65,8 @@ class Toast(QtWidgets.QLabel):
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ovládanie Hvezdárne - C14 - lite version for raspbain bullseye")
+        self._toasts: list = []
+        self.setWindowTitle("Ovládanie Hvezdárne - Astrofoto - lite version for raspbain bullseye")
         self.main_layout = QtWidgets.QWidget()
         self.setCentralWidget(self.main_layout)
 
@@ -71,61 +75,70 @@ class MainWindow(QtWidgets.QMainWindow):
         self.right_column = QtWidgets.QVBoxLayout()
         self.main_hbox.addLayout(self.left_column)
         self.main_hbox.addLayout(self.right_column)
-    
+
         if IS_DEV:
             self.developer_mode_label = QtWidgets.QLabel("🛠️ DEVELOPER MODE")
             self.developer_mode_label.setStyleSheet("color: red; font-weight: bold; font-size: 15pt;")
             self.right_column.addWidget(self.developer_mode_label, alignment=QtCore.Qt.AlignRight)
-    
+
         self.status_labels = {}
         self.log_box = QtWidgets.QTextEdit()
         self.log_box.setReadOnly(True)
         self.log_box.setMinimumHeight(100)
 
-    
         try:
             with open("/home/dpv/j44softapps-socketcontrol/log.txt", "r") as f:
                 lines = f.readlines()
-                self.log_box.setPlainText("".join(lines))
-        except:
+                self.log_box.setPlainText("".join(lines[-100:]))
+        except Exception:
             self.log_box.setPlainText("Nepodarilo sa načítať log.")
             if IS_DEV:
                 print(traceback.format_exc())
-    
+
         self.left_column.addWidget(self.init_astrofoto_section())
         self.right_column.addWidget(self.init_wake_on_lan_section())
         self.right_column.addWidget(self.init_ota_section())
         self.right_column.addWidget(self.log_box)
-    
+
         self.aktualizuj_stav_zasuviek()
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(self.aktualizuj_stav_zasuviek)
         self.status_timer.start(5 * 60 * 1000)
-    
+
         if IS_DEV:
             self.dev_funkcie_btn = QtWidgets.QPushButton("🔧 Odomknúť úpravu funkcií")
             self.dev_funkcie_btn.clicked.connect(self.odomkni_editor_funkcii)
             self.right_column.addWidget(self.dev_funkcie_btn)
-            
+
+        QtCore.QTimer.singleShot(300, self._show_deprecation_warning)
+
+    def _show_deprecation_warning(self):
+        QtWidgets.QMessageBox.warning(
+            self,
+            "Program nie je udržovaný",
+            "⚠️ Tento program nie je ďalej udržovaný.\n"
+            "Pre pomoc kontaktujte j44soft@gmail.com\n\n"
+            "Nová verzia je dostupná na: https://devcontrol2.gitbook.io/devcontrol2"
+        )
+
     def spusti_indistarter_c14(self):
         try:
             out = subprocess.check_output("indistarter", shell=True)
             self.loguj(out.decode())
-        except:
+        except Exception:
             self.loguj_traceback("Chyba spustenia INDISTARTER tu")
 
     def spusti_indistarter_az2000(self):
         try:
             out = subprocess.check_output(f"ssh {SSH_USER2}@{AZ2000_IP} indistarter", shell=True)
             self.loguj(out.decode())
-        except:
+        except Exception:
             self.loguj_traceback("Chyba INDISTARTER AZ2000")
 
     def init_astrofoto_section(self):
         group_box = QtWidgets.QGroupBox("astrofoto")
         layout = QtWidgets.QGridLayout(group_box)
 
-        # Zásuvky
         zasuvky_group = QtWidgets.QGroupBox("Zásuvky")
         zasuvky_layout = QtWidgets.QGridLayout(zasuvky_group)
         for i, (name, cislo) in enumerate(ZASUVKY.items()):
@@ -142,7 +155,6 @@ class MainWindow(QtWidgets.QMainWindow):
             zasuvky_layout.addWidget(self.status_labels[name], i, 3)
         layout.addWidget(zasuvky_group, 0, 0, 1, 3)
 
-        # INDISTARTER
         ind_c14 = QtWidgets.QPushButton("Spustiť INDISTARTER tu")
         ind_az = QtWidgets.QPushButton("null")
         ind_c14.clicked.connect(self.spusti_indistarter_c14)
@@ -150,7 +162,6 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(ind_c14, 1, 0, 1, 3)
         layout.addWidget(ind_az, 2, 0, 1, 3)
 
-        # Strecha
         strecha_group = QtWidgets.QGroupBox("Strecha")
         strecha_layout = QtWidgets.QGridLayout(strecha_group)
         self.sever_button = QtWidgets.QPushButton("Zapad")
@@ -164,7 +175,6 @@ class MainWindow(QtWidgets.QMainWindow):
         strecha_layout.addWidget(self.both_button, 0, 2)
         layout.addWidget(strecha_group, 3, 0, 1, 3)
 
-        # Časovač strechy
         cas_group = QtWidgets.QGroupBox("Načasovať strechu")
         cas_layout = QtWidgets.QGridLayout(cas_group)
         self.cas_enable = QtWidgets.QCheckBox("Aktivovať časovač")
@@ -185,7 +195,6 @@ class MainWindow(QtWidgets.QMainWindow):
         cas_layout.addWidget(self.cas_btn, 3, 0, 1, 2)
         layout.addWidget(cas_group, 4, 0, 1, 3)
 
-        # Timer strechy
         self.timer_strecha = QtCore.QTimer()
         self.timer_strecha.timeout.connect(self.skontroluj_cas_strechy)
         self.timer_strecha.start(60 * 1000)
@@ -207,33 +216,30 @@ class MainWindow(QtWidgets.QMainWindow):
         return box
 
     def init_ota_section(self):
-        box = QtWidgets.QGroupBox("OTA Aktualizácie")
+        box = QtWidgets.QGroupBox("OTA Aktuializácie")
         lay = QtWidgets.QGridLayout(box)
-
         but = QtWidgets.QPushButton("🔄 Aktualizovať program")
         but.clicked.connect(self.aktualizuj_program)
         lay.addWidget(but, 0, 0, 1, 2)
-
         return box
-
 
     def loguj_traceback(self, msg, typ="error"):
         tb = traceback.format_exc()
         self.loguj(f"{msg}\n{tb}" if IS_DEV else msg, typ=typ)
 
     def aktualizuj_stav_zasuviek(self):
-        # self.loguj(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Aktualizujem stav zásuviek.")
         for n, c in ZASUVKY.items():
             self.zisti_stav_zasuvky(c, n)
+
     def ovladaj_zasuvku(self, cis, on, lab):
-        cmd = f"sispmctl -{'o' if on else 'f'} {cis}"
+        cmd = f"sispmctl -{('o' if on else 'f')} {cis}"
         try:
             out = subprocess.check_output(cmd, shell=True)
             self.loguj(out.decode())
         except Exception as e:
             self.loguj(f"Chyba: {e}")
         self.zisti_stav_zasuvky(cis, lab)
-        
+
     def zisti_stav_zasuvky(self, cis, lab):
         try:
             out = subprocess.check_output(f"sispmctl -nqg {cis}", shell=True, text=True).strip()
@@ -243,45 +249,27 @@ class MainWindow(QtWidgets.QMainWindow):
                 "led_def.png"
             )
             self.status_labels[lab].setPixmap(QtGui.QPixmap(pix))
-        except:
+        except Exception:
             self.loguj_traceback(f"Chyba zisťovania stavu zásuvky {lab}")
             self.status_labels[lab].setPixmap(QtGui.QPixmap("led_def.png"))
 
     def ovladaj_strechu(self, s):
         PRIKAZY_STRECHA = {
-            "sever": [
-                "pyhid-usb-relay on 1",
-                "sleep 2",
-                "pyhid-usb-relay off 1",
-            ],
-            "juh": [
-                "pyhid-usb-relay on 2",
-                "sleep 2",
-                "pyhid-usb-relay off 2",
-            ],
-            "both": [
-                "pyhid-usb-relay on 1",
-                "sleep 1",
-                "pyhid-usb-relay on 2",
-                "sleep 2",
-                "pyhid-usb-relay off 1",
-                "sleep 1",
-                "pyhid-usb-relay off 2",
-            ]
+            "sever": ["pyhid-usb-relay on 1", "sleep 2", "pyhid-usb-relay off 1"],
+            "juh":   ["pyhid-usb-relay on 2", "sleep 2", "pyhid-usb-relay off 2"],
+            "both":  ["pyhid-usb-relay on 1", "sleep 1", "pyhid-usb-relay on 2",
+                      "sleep 2", "pyhid-usb-relay off 1", "sleep 1", "pyhid-usb-relay off 2"],
         }
-    
         prikazy = PRIKAZY_STRECHA.get(s)
         if not prikazy:
             self.loguj(f"Neznámy smer strechy: {s}", typ="error")
             return
-    
         try:
             for cmd in prikazy:
                 subprocess.run(cmd, shell=True, check=True)
             self.loguj(f"Strecha ovládaná ({s})", typ="success")
         except Exception as e:
             self.loguj(f"Chyba pri ovládaní strechy ({s}): {e}", typ="error")
-
 
     def toggle_casovac_strechy(self, st):
         e = (st == QtCore.Qt.Checked)
@@ -290,12 +278,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cas_btn.setEnabled(e)
         if not e:
             self.c_act = False
-            
+
     def nastav_casovac_strechy(self):
         try:
             qdt = self.cas_datetime.dateTime()
             self.c_time = qdt.toPyDateTime().replace(tzinfo=pytz.utc)
-
             now_utc = datetime.now(pytz.utc)
             if self.c_time <= now_utc:
                 QtWidgets.QMessageBox.warning(
@@ -305,13 +292,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.c_act = False
                 self.loguj("Zadaný časovač je v minulosti, akcia nebola aktivovaná.", typ="warning")
                 return
-
             self.c_act = True
             self.c_smer = self.cas_smer.currentText()
             self.loguj(f"Časovač nastavený na UTC {self.c_time} pre smer {self.c_smer}", typ="success")
-        except:
+        except Exception:
             self.loguj_traceback("Chyba pri nastavovaní časovača")
-            
+
     def skontroluj_cas_strechy(self):
         if self.c_act and datetime.now(pytz.utc) >= self.c_time:
             self.ovladaj_strechu(self.c_smer)
@@ -320,91 +306,85 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def wake_on_lan(self, mac):
         try:
-            # Check if the `wakeonlan` command is available
             subprocess.run(["which", "wakeonlan"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
-            # If the command is found, proceed with sending the magic packet
             from wakeonlan import send_magic_packet
             send_magic_packet(mac)
-            self.loguj(f"WOL na {mac} nieje podporovany", typ="warning")
-        
+            self.loguj(f"WOL packet sent to {mac}", typ="success")
         except subprocess.CalledProcessError:
-            # If `wakeonlan` command is not found, show a dialog box to notify the user
             self.show_wol_not_supported_dialog()
-        except Exception as e:
+        except Exception:
             self.loguj_traceback("Chyba WOL")
 
     def show_wol_not_supported_dialog(self):
-        msg = QMessageBox(self)
-        msg.setIcon(QMessageBox.Critical)
-        msg.setWindowTitle("WOL not supported")
-        msg.setText("Wake on LAN is not supported on this OS.")
-        QtWidgets.QMessageBox.critical(self, "WOL not supported","Wake on LAN is not supported on this OS.")
-
+        QtWidgets.QMessageBox.critical(self, "WOL not supported", "Wake on LAN is not supported on this OS.")
 
     def spusti_stream(self, rtsp_url):
         try:
             subprocess.Popen(["ffplay", "-fflags", "nobuffer", "-i", rtsp_url])
             self.loguj(f"Spustený RTSP stream: {rtsp_url}", typ="success")
         except Exception:
-            self.loguj_traceback(f"Chyba pri spúšťaní streamu {rtsp_url}")
+            self.loguj_traceback(f"Chyba pri spúštaní streamu {rtsp_url}")
 
     def aktualizuj_program(self):
         try:
-            curl_cmd = (
-                f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py"
-                f" -o {PROGRAM_CESTA}"
-            )
+            _prog = str(Path(__file__).resolve())
+            curl_cmd = f"curl -fsSL {GITHUB_RAW_URL} -o {_prog}"
             subprocess.run(curl_cmd, shell=True, check=True)
-            self.loguj("Program bol úspešne aktualizovaný.")
-            QtWidgets.QMessageBox.information(self, "OTA Aktualizácia", "Program bol aktualizovaný. Reštartujem aplikáciu po zavretí tohto dialógu, ak nebude úspech naštartujte aplikáciu manuálne.", typ="success")
-            subprocess.Popen([sys.executable, PROGRAM_CESTA])
+            self.loguj("Program bol úspšne aktualizovaný.")
+            QtWidgets.QMessageBox.information(
+                self, "OTA Aktuializácia",
+                "Program bol aktualizovaný. Reštartujem aplikáciu po zavretí tohto dialógu, "
+                "ak nebude úspš naštartujte aplikáciu manuálne."
+            )
+            subprocess.Popen([sys.executable, _prog])
             sys.exit(0)
         except subprocess.CalledProcessError as e:
-            self.loguj_traceback(f"Chyba pri aktualizácii programu: {e}")
+            self.loguj_traceback(f"Chyba pri aktuializácii programu: {e}")
         except Exception:
-            self.loguj_traceback("Neočakávaná chyba pri aktualizácii")
-            
+            self.loguj_traceback("Neočakávaná chyba pri aktuializácii")
+
     def odomkni_editor_funkcii(self):
-        pin, ok = QtWidgets.QInputDialog.getText(self, "Developer PIN", "Zadaj PIN pre úpravu funkcií:", QtWidgets.QLineEdit.Password)
+        pin, ok = QtWidgets.QInputDialog.getText(
+            self, "Developer PIN", "Zadaj PIN pre úpravu funkcií:", QtWidgets.QLineEdit.Password
+        )
         if ok and pin == "6589":
             editor = QtWidgets.QDialog(self)
             editor.setWindowTitle("Live úprava funkcií")
             editor.resize(800, 500)
             layout = QtWidgets.QVBoxLayout(editor)
-
-            info = QtWidgets.QLabel("Tu môžeš upraviť funkcie `ovladaj_strechu`, `ovladaj_zasuvku` a `aktualizuj_program`.\nZmeny sa prejavia po reštarte.")
+            info = QtWidgets.QLabel(
+                "Tu môžeš upraviť funkcie `ovladaj_strechu`, `ovladaj_zasuvku` a `aktualizuj_program`.\n"
+                "Zmeny sa prejavia po reštarte."
+            )
             layout.addWidget(info)
-
             try:
-                with open(PROGRAM_CESTA, "r") as f:
+                _prog = str(Path(__file__).resolve())
+                with open(_prog, "r") as f:
                     obsah = f.read()
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Chyba", f"Nepodarilo sa načítať súbor:\n{e}")
                 return
-
             self.editor_area = QtWidgets.QPlainTextEdit()
             self.editor_area.setPlainText(obsah)
             layout.addWidget(self.editor_area)
-
             btn_save = QtWidgets.QPushButton("💾 Uložiť zmeny")
             btn_save.clicked.connect(self.uloz_zmeny_do_programu)
             layout.addWidget(btn_save)
-
             editor.exec_()
         else:
             self.loguj("Zlý PIN alebo zrušené", typ="error")
 
     def uloz_zmeny_do_programu(self):
         try:
-            with open(PROGRAM_CESTA, "w") as f:
+            _prog = str(Path(__file__).resolve())
+            with open(_prog, "w") as f:
                 f.write(self.editor_area.toPlainText())
             QtWidgets.QMessageBox.information(
                 self, "Hotovo", "Zmeny boli uložené. Program sa teraz reštartuje."
             )
-            subprocess.Popen([sys.executable, PROGRAM_CESTA, "-developer"])
+            subprocess.Popen([sys.executable, _prog, "-developer"])
             sys.exit(0)
-        except:
+        except Exception:
             self.loguj_traceback("Nepodarilo sa uložiť úpravy")
 
     def loguj(self, msg, typ="info"):
@@ -420,7 +400,10 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 print("Chyba pri ukladaní logu:", e)
         toast = Toast(msg, typ=typ, parent=self)
+        self._toasts.append(toast)
         toast.show_()
+        self._toasts = [t for t in self._toasts if t.isVisible()]
+
 
 class SplashScreen(QtWidgets.QSplashScreen):
     def __init__(self):
@@ -429,7 +412,6 @@ class SplashScreen(QtWidgets.QSplashScreen):
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.FramelessWindowHint)
         self.setStyleSheet("background-color: white;")
 
-        # === LOGO ===
         logo = QtWidgets.QLabel(self)
         pixmap = QtGui.QPixmap("logo.png")
         scaled = pixmap.scaled(100, 100, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
@@ -437,34 +419,32 @@ class SplashScreen(QtWidgets.QSplashScreen):
         logo.setFixedSize(scaled.size())
         logo.move((self.width() - scaled.width()) // 2, 10)
 
-        base_y = 120  # všetky texty začínajú až pod logom
+        base_y = 120
 
-        # === Nadpis ===
         lbl = QtWidgets.QLabel("🛰️ Jadiv DEVCONTROL raspberried Enterprise for Vihorlat Observatory", self)
         lbl.setStyleSheet("color: #224488; font-weight: bold; font-size: 14pt;")
         lbl.adjustSize()
         lbl.move((self.width() - lbl.width()) // 2, base_y)
 
-        # === Verzia ===
         verzia = QtWidgets.QLabel("Lite version -- raspberried-bullseye", self)
         verzia.setStyleSheet("color: #666; font-size: 10pt;")
         verzia.adjustSize()
         verzia.move((self.width() - verzia.width()) // 2, base_y + 30)
 
-        # === Popis ===
-        extra = QtWidgets.QLabel("Loading the program, that may take a few moments.\nInicializujem všetko potrebné.\nKód obsahuje vyše 1000 riadkov...", self)
+        extra = QtWidgets.QLabel(
+            "Loading the program, that may take a few moments.\nInicializujem všetko potrebné.",
+            self
+        )
         extra.setStyleSheet("color: #000000; font-size: 9pt;")
         extra.setAlignment(QtCore.Qt.AlignCenter)
         extra.adjustSize()
         extra.move((self.width() - extra.width()) // 2, base_y + 60)
 
-        # === Licencia ===
         lic = QtWidgets.QLabel("Licensed under the MIT License – see LICENSE file for details.", self)
         lic.setStyleSheet("color: blue; font-size: 10px;")
         lic.adjustSize()
         lic.move((self.width() - lic.width()) // 2, base_y + 120)
 
-        # === Progress bar ===
         pr = QtWidgets.QProgressBar(self)
         pr.setGeometry(250, base_y + 150, 500, 20)
         pr.setRange(0, 100)
@@ -473,7 +453,7 @@ class SplashScreen(QtWidgets.QSplashScreen):
         self.pr = pr
 
     def simulate_loading(self):
-        base_y = 120  # 
+        base_y = 120
         spravy = [
             "🔧 Aktivujem sekciu spusti_indistarter_c14()...",
             "📡 Aktivujem sekciu spusti_wakeonlan_c14()...",
@@ -497,13 +477,13 @@ class SplashScreen(QtWidgets.QSplashScreen):
             "🚀 Dokončujem inicializáciu hlavného rozhrania..."
         ]
 
-        # Použijeme len jeden QLabel pre status hlášky
         self.status_label = QtWidgets.QLabel("", self)
         self.status_label.setStyleSheet("color: #444; font-size: 10pt;")
         self.status_label.setAlignment(QtCore.Qt.AlignCenter)
         self.status_label.setGeometry(0, base_y + 100, self.width(), 20)
+        self.status_label.show()
 
-        celkovy_cas = 5.0  # celé načítavanie trvá 5 sekúnd
+        celkovy_cas = 5.0
         krok_cas = celkovy_cas / len(spravy)
 
         for i, sprava in enumerate(spravy):
@@ -520,56 +500,50 @@ if __name__ == "__main__":
     QtWidgets.qApp.processEvents()
     splash.simulate_loading()
 
-try:
-    window = MainWindow()
-    window.show()
-    splash.finish(window)
-except Exception as e:
-    splash.close()
-    bug_window = QtWidgets.QWidget()
-    bug_window.setWindowTitle("SPLASH BUG – Chyba pri štarte hlavného okna")
-    bug_window.setMinimumSize(500, 200)
-    layout = QtWidgets.QVBoxLayout(bug_window)
+    try:
+        window = MainWindow()
+        window.show()
+        splash.finish(window)
+    except Exception as e:
+        splash.close()
+        bug_window = QtWidgets.QWidget()
+        bug_window.setWindowTitle("SPLASH BUG – Chyba pri štarte hlavného okna")
+        bug_window.setMinimumSize(500, 200)
+        layout = QtWidgets.QVBoxLayout(bug_window)
+        error_label = QtWidgets.QLabel(
+            "Nastal problém pri štarte hlavného okna aplikácie.\n"
+            "Pravdepodobne je chyba v aktualizovaném kóde.\n"
+            "Ak nieste vývojár kódu obráťte sa na JaPySoft.\n"
+        )
+        error_label.setStyleSheet("color: red; font-size: 11pt; font-weight: bold;")
+        layout.addWidget(error_label)
+        error_details = QtWidgets.QTextEdit()
+        error_details.setReadOnly(True)
+        error_details.setPlainText(str(e))
+        layout.addWidget(error_details)
 
-    error_label = QtWidgets.QLabel(
-        "Nastal problém pri štarte hlavného okna aplikácie.\n"
-        "Pravdepodobne je chyba v aktualizovanom kóde.\n"
-        "Ak nieste vývojár kódu obráťťe sa na JaPySoft.\n"
-    )
-    error_label.setStyleSheet("color: red; font-size: 11pt; font-weight: bold;")
-    layout.addWidget(error_label)
+        def spusti_update():
+            try:
+                _prog = str(Path(__file__).resolve())
+                subprocess.run(f"curl -fsSL {GITHUB_RAW_URL} -o {_prog}", shell=True, check=True)
+                QtWidgets.QMessageBox.information(bug_window, "Hotovo", "Program bol aktualizovaný. Spušť ho znova.")
+                bug_window.close()
+            except Exception as ex:
+                QtWidgets.QMessageBox.critical(bug_window, "Chyba", f"Zlyhala aktuializácia: {ex}")
 
-    error_details = QtWidgets.QTextEdit()
-    error_details.setReadOnly(True)
-    error_details.setPlainText(str(e))
-    layout.addWidget(error_details)
+        def nainstaluj_zavislosti():
+            try:
+                subprocess.run("pip install pyqt5 wakeonlan pytz", shell=True)
+                QtWidgets.QMessageBox.information(bug_window, "OK", "Závislosti boli nainštalované.")
+            except Exception as ex:
+                QtWidgets.QMessageBox.critical(bug_window, "Chyba", f"Zlyhala inštalácia závislostí: {ex}")
 
-    def spusti_update():
-        try:
-            subprocess.run(
-                f"curl -fsSL https://raw.githubusercontent.com/jan-tdy/devcontrolenterpise/main/C14/C14.py -o {PROGRAM_CESTA}",
-                shell=True, check=True
-            )
-            QtWidgets.QMessageBox.information(bug_window, "Hotovo", "Program bol aktualizovaný. Spusť ho znova.")
-            bug_window.close()
-        except Exception as ex:
-            QtWidgets.QMessageBox.critical(bug_window, "Chyba", f"Zlyhala aktualizácia: {ex}")
+        btn_update = QtWidgets.QPushButton("Aktualizovať program")
+        btn_update.clicked.connect(spusti_update)
+        layout.addWidget(btn_update)
+        btn_install = QtWidgets.QPushButton("Nainštalovať závislosti")
+        btn_install.clicked.connect(nainstaluj_zavislosti)
+        layout.addWidget(btn_install)
+        bug_window.show()
 
-    def nainstaluj_zavislosti():
-        try:
-            subprocess.run("pip install pyqt5 wakeonlan pytz opencv-python", shell=True)
-            QtWidgets.QMessageBox.information(bug_window, "OK", "Závislosti boli nainštalované.")
-        except Exception as ex:
-            QtWidgets.QMessageBox.critical(bug_window, "Chyba", f"Zlyhala inštalácia závislostí: {ex}")
-
-    btn_update = QtWidgets.QPushButton("Aktualizovať program")
-    btn_update.clicked.connect(spusti_update)
-    layout.addWidget(btn_update)
-
-    btn_install = QtWidgets.QPushButton("Nainštalovať závislosti")
-    btn_install.clicked.connect(nainstaluj_zavislosti)
-    layout.addWidget(btn_install)
-
-    bug_window.show()
-
-sys.exit(app.exec_())
+    sys.exit(app.exec_())
