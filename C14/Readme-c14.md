@@ -1,25 +1,36 @@
-# DevControl Enterprise atacama
+> [!WARNING]
+> **This program (Atacama Observatory Controller) is no longer maintained.**
+> For support or questions, contact [j44soft@gmail.com](mailto:j44soft@gmail.com).
+> A newer, actively developed version is available at [devcontrol2.gitbook.io](https://devcontrol2.gitbook.io/devcontrol2).
 
-[![License][license-shield]](LICENSE) 
+# DevControl Enterprise Atacama (C14)
+
+[![License][license-shield]](LICENSE)
 [![Maintenance](https://img.shields.io/maintenance/no/2026?style=for-the-badge)](https://github.com/jan-tdy/devcontrolenterpise)
 [![Stars][stars-shield]][stars]
 [![Issues][issues-shield]][issues]
 [![Discussions][discussions-shield]][discussions]
 
 ## About
-What began as a simple script to manage a programmable power strip in an astronomical observatory has evolved into a comprehensive control suite. **DevControl Enterprise** now provides robust, scalable software solutions for managing hardware across multiple telescope pavilions. 
 
-We are continuously expanding our suite of programs to support more devices and advanced observatory setups. 
+**DevControl Enterprise C14** provides power strip control, roof automation, RTSP camera streaming, and WOL support for the Atacama (C14) pavilion at Vihorlat Observatory.
 
-**Need a custom solution?**
-If you are interested in a tailored DevControl implementation for your own observatory or hosting facility, contact us at [j44soft@gmail.com](mailto:j44soft@gmail.com) and we will build it for you.
+> **Note:** This program targets **Ubuntu 24.04** and is no longer actively developed. Bug fixes may be applied but no new features are planned.
+
+## Known Issues / Security Notes
+
+- `SSH_PASS` and `SSH_PASS2` are hardcoded in the source. Do **not** distribute this binary or source publicly.
+- OTA update downloads raw Python from GitHub and writes it directly to the running file with no signature verification. Only use on a trusted network.
+- RTSP camera streaming uses OpenCV (`opencv-python`). Install with `pip install opencv-python`.
 
 ## Community & Support
+
 * **Bug Reports & Feature Requests:** Please post any issues [here][issues].
 * **Community Chat:** Join the discussion [here][discussions].
 * **Source Code:** Explore the repository [here](https://github.com/jan-tdy/devcontrolenterpise).
 
 ---
+
 *Developed and maintained by **JapySoft***
 
 [license-shield]: https://img.shields.io/github/license/jan-tdy/devcontrolenterpise?style=for-the-badge
