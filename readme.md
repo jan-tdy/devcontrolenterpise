@@ -19,7 +19,7 @@ Comprehensive observatory control suite for managing hardware at astronomical fa
 | [Astrofoto](./Astrofoto/) | ⚠️ **Unmaintained** | PyQt5, Raspbian Bullseye | Observatory power & roof control (legacy) |
 | [C14](./C14/) | ⚠️ **Unmaintained** | PyQt5, Ubuntu 24.04 | Atacama pavilion power, roof & camera control (legacy) |
 
-> **Astrofoto** and **C14** are no longer actively developed. For continued support see [devcontrol2.gitbook.io](https://devcontrol2.gitbook.io/devcontrol2) or contact [j44soft@gmail.com](mailto:j44soft@gmail.com).
+> **Astrofoto** and **C14** are no longer actively developed. For continued support contact [j44soft@gmail.com](mailto:j44soft@gmail.com).
 
 ---
 
@@ -33,7 +33,7 @@ pip install -r requirements.txt
 python devcontrol.py
 ```
 
-Hardware: Raspberry Pi Pico + servo motor + USB. See [Krytka01/readme.md](./Krytka01/readme.md) for full wiring, protocol docs, and troubleshooting.
+Hardware(You can buy kit from me): Raspberry Pi Pico + servo motor + USB. See [Krytka01/readme.md](./Krytka01/readme.md) for full wiring, protocol docs, and troubleshooting.
 
 ### DSLR\_supported — Astrophotography Sequencer
 
@@ -44,7 +44,7 @@ pip install -r requirements.txt
 python devcontrol_dslr.py
 ```
 
-Requires: Canon 6D (or compatible), gphoto2 CLI, PyQt6. See [DSLR\_supported/readme.md](./DSLR_supported/readme.md) for full setup.
+Requires: Canon 6D (or smillar), gphoto2 CLI, PyQt6. See [DSLR\_supported/readme.md](./DSLR_supported/readme.md) for full setup.
 
 ---
 
@@ -82,8 +82,8 @@ What began as a simple script to control a programmable power strip in an astron
 
 ### History
 
-- **v1**: Single-script power strip controller for Vihorlat Observatory
-- **v2**: Expanded to multi-pavilion setup (Astrofoto + C14/Atacama)
+- **v?**: Single-script power strip controller for Vihorlat Observatory
+- **v?**: Expanded to multi-pavilion setup (Astrofoto + C14/Atacama)
 - **Current**: Krytka01 (telescope cover) + DSLR\_supported (astrophotography sequencer); legacy modules archived
 - **Future**: Krytka01 and DSLR\_supported will each move to their own dedicated repositories
 
@@ -98,7 +98,7 @@ What began as a simple script to control a programmable power strip in an astron
 
 ---
 
-*Developed and maintained by **JapySoft TDY***
+*Developed and (non)maintained by **JapySoft TDY***
 
 [license-shield]: https://img.shields.io/github/license/jan-tdy/devcontrolenterpise?style=for-the-badge
 [issues-shield]: https://img.shields.io/github/issues/jan-tdy/devcontrolenterpise?style=for-the-badge
