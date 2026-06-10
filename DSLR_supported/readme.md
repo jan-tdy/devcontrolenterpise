@@ -1,46 +1,128 @@
+# DevControl DSLR – Astrophotography Sequencer
 
-# DevControl DSLR (Astro-Sequencer)
+[![License][license-shield]](../LICENSE)
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue?style=for-the-badge&logo=python)
+![PyQt6](https://img.shields.io/badge/PyQt6-6.4%2B-green?style=for-the-badge)
+![gphoto2](https://img.shields.io/badge/gphoto2-required-orange?style=for-the-badge)
 
-A PyQt6-based graphical user interface for controlling DSLR cameras (tested with Canon 6D) specifically designed for astrophotography. It utilizes `gphoto2` under the hood to manage connections over USB or WiFi (PTP/IP).
+A PyQt6 GUI for controlling DSLR cameras (tested with **Canon 6D**) during deep-sky astrophotography sessions. Wraps `gphoto2` to manage connections over **USB** or **WiFi (PTP/IP)**. Designed for observatory use with a red night-vision-safe dark theme.
+
+> **Contact / custom builds:** j44soft@gmail.com
+
+---
 
 ## Features
-* **Astro-Themed UI:** Dark red interface designed to preserve night vision during observation sessions.
-* **Dual Connection Modes:** Supports reliable USB tethering and wireless PTP/IP (WiFi) connections.
-* **Advanced Sequencer:** Automate your imaging sessions with precise control over frame counts and intervals.
-* **Dynamic File Naming:** Custom pattern builder for easy file organization (e.g., Object, Frame Type, ISO, Exposure, Timestamp).
-* **Astro-Specific Controls:** Direct toggles for Mirror Lockup (MLU), LCD screen power management (to reduce thermal noise), and manual focus stepping.
-* **OTA Updates:** Built-in update checker that pulls the latest stable script version directly from this repository.
+
+| Feature | Description |
+|---|---|
+| **Astro dark theme** | Deep red/black UI to preserve night vision |
+| **USB & WiFi** | USB tethering or PTP/IP wireless (Canon 6D WiFi) |
+| **Imaging sequencer** | Multi-frame sessions with configurable frame count and interval |
+| **Dynamic file naming** | Pattern system with object, frame type, ISO, exposure, date/time wildcards |
+| **Astro controls** | Mirror Lockup, LCD disable (reduces sensor heat), manual focus stepping |
+| **Non-blocking settings** | ISO/shutter applied in a background thread – UI stays responsive |
+| **OTA updates** | Background version check and in-app update from GitHub |
+
+---
+
+## Architecture
+
+```
+devcontrol_dslr.py
+ ├── UpdateWorker(QThread)        – background GitHub version check
+ ├── ApplySettingsWorker(QThread) – ISO/shutter/MLU/LCD off main thread
+ └── GphotoWorker(QThread)        – imaging sequence / single command
+         └── subprocess gphoto2        – USB or PTP/IP camera control
+```
+
+---
 
 ## Prerequisites
 
-This application acts as a wrapper around `gphoto2`. You **must** have the `gphoto2` command-line utility installed on your operating system.
+### gphoto2
 
 **Linux (Debian/Ubuntu/Raspberry Pi OS):**
 ```bash
-sudo apt update
-sudo apt install gphoto2
-
+sudo apt update && sudo apt install gphoto2
 ```
-**Python Dependencies:**
-The script requires Python 3 and a few external libraries. Install them via pip:
+
+**macOS:**
 ```bash
-pip3 install PyQt6 requests
-
+brew install gphoto2
 ```
+
+### Python dependencies
+
+```bash
+pip3 install -r requirements.txt
+# or
+pip3 install "PyQt6>=6.4" "requests>=2.28"
+```
+
+---
+
 ## Usage
-Run the script from your terminal:
+
 ```bash
 python3 devcontrol_dslr.py
-
 ```
-### File Naming Pattern Guide
-You can customize how your RAW files are saved using the following wildcards:
- * %O - Target Object Name
- * %T - Frame Type (Light, Dark, Flat, Bias)
- * %N - Sequence Number (e.g., 001, 002)
- * %I - ISO Value
- * %E - Exposure Time (automatically replaces / with - for OS compatibility)
- * %D - Current Date (YYYYMMDD)
- * %H - Current Time (HHMMSS)
-### Troubleshooting WiFi (PTP/IP)
-If you encounter a *'PTP Device Busy'* error while using the WiFi connection, try increasing the interval (pause) between frames in the sequencer settings to give the camera's network buffer more time to clear.
+
+### Connection
+
+1. Select **USB** (default) or **WiFi** and enter the camera IP (Canon 6D default: `192.168.5.204`).
+2. Click **Test Connection** – runs `gphoto2 --auto-detect` and shows output in the log.
+
+### File Naming Patterns
+
+| Wildcard | Meaning | Example output |
+|---|---|---|
+| `%O` | Target object name | `M42` |
+| `%T` | Frame type | `Light` / `Dark` / `Flat` / `Bias` |
+| `%N` | Sequence number (3-digit zero-padded) | `001` |
+| `%I` | ISO value | `1600` |
+| `%E` | Exposure time (`/` replaced by `-`) | `300` or `1-100` |
+| `%D` | Date | `20260610` |
+| `%H` | Time | `210530` |
+
+Default pattern: `%O_%T_S%N_ISO%I_%E`
+Example output: `M42_Light_S001_ISO1600_300.CR2`
+
+### Imaging Sequence
+
+1. Set **Object** name and file-naming **Pattern**.
+2. Select **Type**, **ISO**, and **Exposure**. For exposures > 30 s use **bulb** and set duration.
+3. Set **Frames** count and **Interval** (seconds between frames).
+4. Click **START**. Use **STOP** to abort.
+
+### Applying Camera Settings
+
+**Apply ISO / Shutter** pushes ISO, shutter speed, Mirror Lockup, and LCD state to the camera. Commands run in a background thread so the UI stays fully responsive.
+
+---
+
+## Known Limitations
+
+- Files are always saved as `.CR2` (Canon RAW). For other cameras adjust the `--filename` extension in `GphotoWorker.run()`.
+- Bulb accuracy depends on OS timer precision — avoid very short bulb values.
+- WiFi connections are sensitive to latency. Increase interval if you see **PTP Device Busy** errors.
+- OTA writes the new script directly to `__file__` without hash verification. Only accept updates from your own trusted repository.
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `gphoto2` not found | Not installed | `sudo apt install gphoto2` |
+| PTP Device Busy (WiFi) | Camera buffer full | Increase interval between frames (≥10 s) |
+| UI freezes on Apply Settings | Old version bug | Fixed in current version (worker thread) |
+| Files saved in wrong location | Filename is relative to cwd | Run from your target directory |
+
+---
+
+## License
+
+MIT – see [../LICENSE](../LICENSE).
+Contact: **j44soft@gmail.com**
+
+[license-shield]: https://img.shields.io/github/license/jan-tdy/devcontrolenterpise?style=for-the-badge
