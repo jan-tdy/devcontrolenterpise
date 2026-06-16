@@ -17,6 +17,7 @@
       "entrypoint": "devcontrol.py",
       "run": "python3 devcontrol.py",
       "requirements": "requirements.txt",
+      "update_method": "sync",
       "maintained": true
     },
     {
@@ -31,6 +32,7 @@
       "subdir": "Astrofoto",
       "entrypoint": "Astrofoto.py",
       "run": "python3 Astrofoto.py",
+      "update_method": "sync",
       "maintained": false
     },
     {
@@ -45,6 +47,7 @@
       "subdir": "C14",
       "entrypoint": "C14.py",
       "run": "python3 C14.py",
+      "update_method": "sync",
       "maintained": false
     },
     {
@@ -60,6 +63,7 @@
       "entrypoint": "devcontrol_dslr.py",
       "run": "python3 devcontrol_dslr.py",
       "requirements": "requirements.txt",
+      "update_method": "sync",
       "maintained": true
     }
   ]
