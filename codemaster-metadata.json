@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "publisher": "jan-tdy",
+  "repo": "devcontrolenterpise",
+  "homepage": "https://github.com/jan-tdy/devcontrolenterpise",
+  "apps": [
+    {
+      "id": "devcontrol-krytka",
+      "name": "DevControl – Telescope Cover",
+      "tagline": "Motorised dome cover controller",
+      "description": "PyQt5 desktop GUI for controlling a motorised dome cover at an astronomical observatory. The cover is driven by a servo motor connected to a Raspberry Pi Pico over USB serial.",
+      "category": "Astronomy",
+      "version": "2026.6_1.0",
+      "author": "JapySoft TDY",
+      "icon": "Krytka01/logo.png",
+      "subdir": "Krytka01",
+      "entrypoint": "devcontrol.py",
+      "run": "python3 devcontrol.py",
+      "requirements": "requirements.txt",
+      "maintained": true
+    },
+    {
+      "id": "devcontrol-astrofoto",
+      "name": "DevControl – Astrofoto",
+      "tagline": "Observatory control for the Astrofoto pavilion",
+      "description": "Control suite for managing hardware (power strips, roof, cameras) for the Astrofoto pavilion at Vihorlat Observatory.",
+      "category": "Astronomy",
+      "version": "1.0.0",
+      "author": "JapySoft TDY",
+      "icon": "Astrofoto/logo.png",
+      "subdir": "Astrofoto",
+      "entrypoint": "Astrofoto.py",
+      "run": "python3 Astrofoto.py",
+      "maintained": false
+    },
+    {
+      "id": "devcontrol-c14",
+      "name": "DevControl – Atacama (C14)",
+      "tagline": "Power, roof, RTSP & WOL for the C14 pavilion",
+      "description": "Provides power strip control, roof automation, RTSP camera streaming and Wake-on-LAN support for the Atacama (C14) pavilion at Vihorlat Observatory. Targets Ubuntu 24.04.",
+      "category": "Astronomy",
+      "version": "1.0.0",
+      "author": "JapySoft TDY",
+      "icon": "C14/logo.png",
+      "subdir": "C14",
+      "entrypoint": "C14.py",
+      "run": "python3 C14.py",
+      "maintained": false
+    },
+    {
+      "id": "devcontrol-dslr",
+      "name": "DevControl – DSLR Sequencer",
+      "tagline": "DSLR astrophotography sequencer (gphoto2)",
+      "description": "PyQt6 GUI for controlling DSLR cameras (tested with Canon 6D) during deep-sky astrophotography sessions. Wraps gphoto2 to manage connections over USB or WiFi (PTP/IP), with a night-vision-safe dark theme.",
+      "category": "Photography",
+      "version": "1.0.0",
+      "author": "JapySoft TDY",
+      "icon": "Astrofoto/logo.png",
+      "subdir": "DSLR_supported",
+      "entrypoint": "devcontrol_dslr.py",
+      "run": "python3 devcontrol_dslr.py",
+      "requirements": "requirements.txt",
+      "maintained": true
+    }
+  ]
+}
